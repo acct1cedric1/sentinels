@@ -146,7 +146,7 @@ function updateGatebar() {
   if (!a || !a.authenticated) {
     cta = `<button class="gate-cta" id="gateConnect">Connect wallet to unlock</button>`;
   } else if (!g.token_set) {
-    cta = `<span class="gate-note">Token not launched yet — preview mode. Admin wallets unlock it.</span>`;
+    cta = "";
   } else {
     const bal = a.balance_usd != null ? ` (you hold $${a.balance_usd})` : "";
     cta = `<span class="gate-note">Hold $${g.min_usd} of the token to unlock${bal}.</span>`;
