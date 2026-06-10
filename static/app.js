@@ -291,8 +291,9 @@ async function openTokenDrawer(t) {
   showOverlay(`<div class="d-head">${tokenLogo(t, "")}
       <div><div class="d-title">${esc(t.symbol)}</div><div class="d-sub">${esc(t.name)}</div></div></div>
     <div class="d-sub">${esc(t.address)} <button class="copy" data-copy="${esc(t.address)}">copy</button>
-      <a class="ext" href="https://birdeye.so/token/${esc(t.address)}?chain=solana" target="_blank">Birdeye ↗</a>
-      <a class="ext" href="https://dexscreener.com/solana/${esc(t.address)}" target="_blank">Dex ↗</a></div>
+      <a class="ext" href="https://dexscreener.com/solana/${esc(t.address)}" target="_blank">DexScreener ↗</a>
+      <a class="ext" href="https://www.geckoterminal.com/solana/tokens/${esc(t.address)}" target="_blank">GeckoTerminal ↗</a>
+      <a class="ext" href="https://solscan.io/token/${esc(t.address)}" target="_blank">Solscan ↗</a></div>
     <div class="d-meta">
       <div><span>Price</span><b>${price(t.price)}</b></div>
       <div><span>24h</span><b class="${t.price_change_24h >= 0 ? "up" : "down"}">${pct(t.price_change_24h)}</b></div>
@@ -318,7 +319,7 @@ async function openWalletDrawer(w) {
   showOverlay(`<div class="d-head"><span class="av" style="width:46px;height:46px;font-size:16px">${esc(ini)}</span>
       <div><div class="d-title">${esc(w.alias)}</div><div class="d-sub">${esc(w.short)}</div></div></div>
     <div class="d-sub">${esc(w.wallet)} <button class="copy" data-copy="${esc(w.wallet)}">copy</button>
-      <a class="ext" href="https://birdeye.so/profile/${esc(w.wallet)}?chain=solana" target="_blank">Birdeye ↗</a>
+      <a class="ext" href="https://gmgn.ai/sol/address/${esc(w.wallet)}" target="_blank">GMGN ↗</a>
       <a class="ext" href="https://solscan.io/account/${esc(w.wallet)}" target="_blank">Solscan ↗</a></div>
     <div class="d-meta">
       <div><span>Win rate</span><b class="${w.winrate >= 60 ? "up" : w.winrate == null ? "muted" : ""}">${w.winrate == null ? "—" : w.winrate + "%"}</b></div>
