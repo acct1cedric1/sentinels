@@ -1,3 +1,13 @@
 {
-  "helius_api_key": "PASTE_YOUR_HELIUS_KEY_HERE"
+  "helius_api_key": "PASTE_YOUR_HELIUS_KEY_HERE",
+  "contract_address": "",
+  "anthropic_api_key": "",
+  "gating": {
+    "enabled": true,
+    "lock_winrate": 50,
+    "token_mint": "",
+    "min_usd": 5,
+    "admin_wallets": [],
+    "pumpfun_mcap_target": 100000
+  }
 }
