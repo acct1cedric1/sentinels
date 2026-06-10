@@ -1,0 +1,22 @@
+# --- secrets: NEVER commit these ---
+config.json
+api_key.txt
+.session_secret
+.env
+*.key
+
+# --- runtime data ---
+chat_log.json
+
+# --- python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# --- os / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENTINELS_ · Solana Flow Terminal</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="statusbar">
+  <span class="sb-item">SENTINELS_TERMINAL v2.0</span>
+  <span class="sb-item sb-live"><i class="livedot"></i>MAINNET</span>
+  <span class="sb-item sb-right" id="utc-clock">--:--:-- UTC</span>
+</div>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">◎</span>
+    <div>
+      <div class="co">// SOLANA · ON-CHAIN INTELLIGENCE</div>
+      <h1>Money Flow</h1>
+    </div>
+    <button id="chatToggle" class="chat-toggle">▣ Community Chat</button>
+  </div>
+  <div class="controls">
+    <div class="ctrl">
+      <label>Search</label>
+      <input type="search" id="search" placeholder="Token, symbol or wallet">
+    </div>
+    <div class="ctrl">
+      <label>Timeframe</label>
+      <select id="tf">
+        <option value="1h">1h</option>
+        <option value="4h">4h</option>
+        <option value="8h">8h</option>
+        <option value="24h" selected>24h</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>Flow</label>
+      <select id="flow">
+        <option value="all">All flow</option>
+        <option value="acc">Accumulating</option>
+        <option value="dist">Distributing</option>
+      </select>
+    </div>
+    <div class="ctrl chk">
+      <label>&nbsp;</label>
+      <label class="switch"><input type="checkbox" id="memes"> Memecoins only</label>
+    </div>
+    <button id="refresh" class="btn" title="Refresh">↻</button>
+    <button id="connect" class="btn-connect">Connect Wallet</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="tokens">Tokens <span class="tcount" id="cnt-tokens"></span></button>
+  <button class="tab" data-tab="wallets">Smart Money <span class="tcount" id="cnt-wallets"></span></button>
+  <button class="tab" data-tab="pumpfun">Pump.fun Radar <span class="tcount" id="cnt-pf"></span></button>
+  <div class="updated"><span id="updated">—</span></div>
+</nav>
+
+<div id="banner" class="banner hidden"></div>
+<div id="gatebar" class="gatebar hidden"></div>
+
+<main>
+  <!-- SMART MONEY (tokens) -->
+  <section id="view-tokens" class="view">
+    <div class="grid-wrap">
+      <table id="tok-grid">
+        <thead>
+          <tr>
+            <th class="lft" data-sort="name">Token</th>
+            <th data-sort="price">Price</th>
+            <th data-sort="price_change_24h">24h %</th>
+            <th data-sort="smart_net_usd" class="sorted">Smart Net Flow</th>
+            <th data-sort="smart_buy_usd">Smart Buys</th>
+            <th data-sort="smart_sell_usd">Smart Sells</th>
+            <th data-sort="smart_wallets">Wallets</th>
+            <th data-sort="volume_24h">24h Vol</th>
+            <th data-sort="mcap">Mkt Cap</th>
+          </tr>
+        </thead>
+        <tbody id="tok-body">
+          <tr><td colspan="9" class="loading">Loading smart-money flow…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TOP TRADERS (wallets) -->
+  <section id="view-wallets" class="view hidden">
+    <div class="grid-wrap">
+      <table id="wal-grid">
+        <thead>
+          <tr>
+            <th class="lft" data-sort="alias">Smart Wallet</th>
+            <th data-sort="winrate" class="sorted">Win rate</th>
+            <th data-sort="net_usd">Net Flow</th>
+            <th data-sort="buy_usd">Bought</th>
+            <th data-sort="sell_usd">Sold</th>
+            <th data-sort="volume_usd">Volume</th>
+            <th data-sort="tokens_traded">Tokens</th>
+            <th data-sort="trades">Trades</th>
+            <th>Holdings</th>
+          </tr>
+        </thead>
+        <tbody id="wal-body">
+          <tr><td colspan="9" class="loading">Loading traders…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PUMP.FUN RADAR (milestone-gated) -->
+  <section id="view-pumpfun" class="view hidden">
+    <div class="pf-controls">
+      <label class="switch"><input type="checkbox" id="pf-smart"> Smart money only</label>
+      <span class="pf-note" id="pf-note">Live feed of every new pump.fun launch — including un-bonded tokens seconds old.</span>
+      <span class="pf-updated" id="pf-updated"></span>
+    </div>
+    <div id="pf-lock" class="pf-lock hidden"></div>
+    <div class="grid-wrap" id="pf-wrap">
+      <table id="pf-grid">
+        <thead>
+          <tr>
+            <th class="lft">Token</th>
+            <th>Age</th>
+            <th>Mkt Cap</th>
+            <th>Status</th>
+            <th>Replies</th>
+            <th>Smart Buyers</th>
+            <th>Links</th>
+          </tr>
+        </thead>
+        <tbody id="pf-body">
+          <tr><td colspan="7" class="loading">Loading launches…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<div id="overlay" class="overlay hidden">
+  <div class="drawer" id="drawer">
+    <button class="close" id="closeDrawer">✕</button>
+    <div id="drawerBody"></div>
+  </div>
+</div>
+
+<div id="chatPanel" class="chatpanel hidden">
+  <div class="chat-head">
+    <span class="chat-title">▣ Community Chat</span>
+    <span class="chat-ai" id="chat-ai"></span>
+    <button class="chat-close" id="chatClose">✕</button>
+  </div>
+  <div class="chat-msgs" id="chat-msgs"></div>
+  <div class="chat-foot">
+    <div class="chat-locked" id="chat-locked">› Connect your wallet to chat</div>
+    <div class="chat-input-row hidden" id="chat-input-row">
+      <input id="chat-input" maxlength="300" placeholder="Message the community…" autocomplete="off">
+      <button id="chat-send">SEND</button>
+    </div>
+    <div class="chat-note" id="chat-note"></div>
+  </div>
+</div>
+
+<div id="wmodal" class="wmodal hidden">
+  <div class="wmodal-card">
+    <button class="close" id="wmodalClose">✕</button>
+    <h3 id="wmodalTitle">Connect a wallet</h3>
+    <p class="wmodal-sub" id="wmodalSub">Sign a free message to verify ownership. No transaction, no gas.</p>
+    <div id="walletList" class="wallet-list">Detecting wallets…</div>
+    <div id="wmodalMsg" class="wmodal-msg"></div>
+  </div>
+</div>
+
+<script>
+setInterval(() => {
+  const el = document.getElementById("utc-clock");
+  if (el) el.textContent = new Date().toISOString().slice(11, 19) + " UTC";
+}, 1000);
+</script>
+<script src="app.js"></script>
+<script type="module" src="wallet.js"></script>
+</body>
+</html>

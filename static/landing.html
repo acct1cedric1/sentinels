@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENTINELS_ — Follow the wallets that win</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060907;--bg2:#090d0b;--panel:#0c120f;--panel2:#101713;--line:#1c2a23;--line2:#2c443a;
+  --text:#cde7d8;--muted:#5e7d6d;--green:#2bff88;--sell:#ff4d57;--amber:#ffb02e;--chip:#13201a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+::selection{background:var(--green);color:#04130a}
+html{scroll-behavior:smooth}
+body{font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace;background:var(--bg);
+  color:var(--text);min-height:100vh;font-size:14px}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:998;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px)}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:997;
+  background:radial-gradient(1000px 420px at 50% -140px,rgba(43,255,136,.06),transparent 70%)}
+a{color:var(--green)}
+@keyframes blink{0%,55%{opacity:1}56%,100%{opacity:0}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+.statusbar{display:flex;gap:22px;align-items:center;padding:5px 20px;font-size:10px;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);
+  border-bottom:1px solid var(--line);background:var(--bg2)}
+.livedot{display:inline-block;width:7px;height:7px;background:var(--green);
+  margin-right:7px;animation:pulse 1.6s infinite}
+.sb-live{color:var(--green)}
+.sb-right{margin-left:auto;font-variant-numeric:tabular-nums}
+
+.nav{display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:1px solid var(--line);
+  background:rgba(9,13,11,.85);backdrop-filter:blur(4px);position:sticky;top:0;z-index:50;flex-wrap:wrap}
+.logo{width:38px;height:38px;display:grid;place-items:center;font-size:19px;border:1px solid var(--green);
+  color:var(--green);box-shadow:4px 4px 0 0 rgba(43,255,136,.18)}
+.brand{font-weight:700;font-size:15px;letter-spacing:1.5px}
+.brand i{font-style:normal;color:var(--green);animation:blink 1.1s steps(1) infinite}
+.nav nav{margin-left:auto;display:flex;gap:22px;align-items:center}
+.nav nav a{color:var(--muted);text-decoration:none;font-size:11px;font-weight:600;
+  letter-spacing:1.5px;text-transform:uppercase}
+.nav nav a:hover{color:var(--text)}
+.cta{background:var(--green);color:#04130a !important;font-weight:700;padding:10px 18px;
+  font-size:11px;letter-spacing:1px;text-decoration:none;border:1px solid var(--green);
+  box-shadow:4px 4px 0 0 rgba(43,255,136,.22);text-transform:uppercase}
+.cta::before{content:"[ "}
+.cta::after{content:" ]"}
+.cta:hover{background:transparent;color:var(--green) !important}
+
+.hero{max-width:1020px;margin:0 auto;padding:90px 24px 56px}
+.hero .pre{color:var(--muted);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:18px}
+.hero .pre::before{content:"$ ";color:var(--green)}
+.hero h1{font-size:clamp(30px,5.6vw,58px);font-weight:700;letter-spacing:-1px;line-height:1.1;
+  text-transform:uppercase}
+.hero h1 b{color:var(--green);font-weight:700}
+.hero h1 .cur{color:var(--green);animation:blink 1.1s steps(1) infinite}
+.hero p{color:var(--muted);font-size:14px;line-height:1.9;max-width:640px;margin:24px 0 34px}
+.hero p b{color:var(--text);font-weight:600}
+.btnrow{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.ghost{background:transparent;color:var(--text) !important;border-color:var(--line2);box-shadow:none}
+.ghost:hover{border-color:var(--text)}
+.ca{display:flex;align-items:center;gap:10px;border:1px solid var(--line2);background:var(--bg2);
+  padding:9px 14px;flex-wrap:wrap}
+.ca-lbl{color:var(--muted);font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.ca-val{color:var(--green);font-size:12px;word-break:break-all}
+.ca-copy{background:transparent;border:1px solid var(--line2);color:var(--muted);font-family:inherit;
+  font-size:10px;padding:2px 8px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px}
+.ca-copy:hover{color:var(--green);border-color:var(--green)}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0;
+  border:1px solid var(--line);margin:64px 0 0;background:var(--bg2)}
+.stat{padding:20px 22px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:none}
+.stat span{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:1.8px;display:block;margin-bottom:8px}
+.stat span::before{content:"› "}
+.stat b{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat b em{font-style:normal;color:var(--green)}
+
+section{max-width:1020px;margin:0 auto;padding:60px 24px}
+h2{font-size:20px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+h2::before{content:"// ";color:var(--green)}
+.sub{color:var(--muted);font-size:13px;margin-bottom:34px;line-height:1.7}
+
+.feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0;border:1px solid var(--line)}
+.feat{background:var(--bg2);border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:24px 22px;position:relative}
+.feat .num{position:absolute;top:14px;right:16px;color:var(--line2);font-size:22px;font-weight:700}
+.feat h3{font-size:13px;font-weight:700;margin-bottom:10px;letter-spacing:1px;text-transform:uppercase;color:var(--green)}
+.feat p{color:var(--muted);font-size:12px;line-height:1.8}
+.feat:hover{background:var(--panel)}
+
+.mile{border:1px solid var(--amber);background:var(--bg2);padding:24px;margin-top:34px;
+  box-shadow:6px 6px 0 0 rgba(255,176,46,.12)}
+.mile h3{font-size:12px;font-weight:700;margin-bottom:14px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber)}
+.bar{height:16px;border:1px solid var(--line2);background:#00000060;padding:2px;margin-bottom:10px}
+.bar i{display:block;height:100%;min-width:3px;width:0%;transition:width .8s ease;
+  background:repeating-linear-gradient(90deg,var(--green) 0 6px,transparent 6px 9px)}
+.bar-lbl{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+.road{border-left:1px solid var(--line2);margin-left:8px;padding-left:34px}
+.rstep{position:relative;padding-bottom:36px}
+.rstep:last-child{padding-bottom:4px}
+.rstep::before{content:"";position:absolute;left:-41px;top:4px;width:13px;height:13px;
+  background:var(--bg);border:1px solid var(--line2)}
+.rstep.done::before{background:var(--green);border-color:var(--green)}
+.rcap{font-size:10px;font-weight:700;color:var(--green);letter-spacing:2px}
+.rstep h3{font-size:15px;font-weight:700;margin:5px 0 7px;letter-spacing:1px;text-transform:uppercase}
+.rstep p{color:var(--muted);font-size:12px;line-height:1.8;max-width:640px}
+.rtag{display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;margin-left:10px;
+  letter-spacing:1px;text-transform:uppercase;vertical-align:2px}
+.rtag.live{background:var(--green);color:#04130a}
+.rtag.lock{border:1px solid var(--amber);color:var(--amber)}
+
+.faq details{background:var(--bg2);border:1px solid var(--line);padding:16px 20px;margin-bottom:-1px}
+.faq summary{font-size:13px;font-weight:600;cursor:pointer;list-style:none;display:flex;
+  align-items:baseline;gap:14px;letter-spacing:.3px}
+.faq summary .q{color:var(--green);font-size:11px;font-weight:700;flex:none}
+.faq summary::after{content:"[+]";margin-left:auto;color:var(--muted);font-size:11px;flex:none}
+.faq details[open]{border-color:var(--line2);background:var(--panel)}
+.faq details[open] summary::after{content:"[–]";color:var(--green)}
+.faq p{color:var(--muted);font-size:12px;line-height:1.9;margin-top:14px;padding-left:38px}
+.faq p b{color:var(--text);font-weight:600}
+
+footer{border-top:1px solid var(--line);padding:28px 24px;color:var(--muted);font-size:10px;
+  line-height:1.9;max-width:880px;margin:40px auto 0;letter-spacing:.3px}
+footer::before{content:"// DISCLAIMER";display:block;color:var(--line2);letter-spacing:2px;margin-bottom:8px}
+@media(max-width:600px){.nav nav a:not(.cta){display:none}.stat{border-bottom:1px solid var(--line)}}
+</style>
+</head>
+<body>
+
+<div class="statusbar">
+  <span>SENTINELS_TERMINAL v2.0</span>
+  <span class="sb-live"><i class="livedot"></i>MAINNET</span>
+  <span class="sb-right" id="utc">--:--:-- UTC</span>
+</div>
+
+<header class="nav">
+  <span class="logo">◎</span>
+  <span class="brand">SENTINELS<i>_</i></span>
+  <nav>
+    <a href="#features">Modules</a>
+    <a href="#roadmap">Roadmap</a>
+    <a href="#faq">FAQ</a>
+    <a class="cta" href="/app">Launch Terminal</a>
+  </nav>
+</header>
+
+<div class="hero">
+  <div class="pre">tracking solana smart money — live</div>
+  <h1>Follow the wallets<br>that <b>actually win</b><span class="cur">▮</span></h1>
+  <p>Real-time money flow across <b>the entire actively-traded Solana universe</b>. We discover the
+     most active wallets straight from on-chain swaps, score every one by <b>realized win rate</b>,
+     and show you what they're accumulating — before the crowd catches on.</p>
+  <div class="btnrow">
+    <a class="cta" href="/app">Launch Terminal</a>
+    <a class="cta ghost" href="#roadmap">View Roadmap</a>
+    <div class="ca" id="ca">
+      <span class="ca-lbl">Official contract address:</span>
+      <code class="ca-val" id="ca-val">TBA — launching soon</code>
+      <button class="ca-copy" id="ca-copy" hidden>copy</button>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><span>Tokens tracked</span><b id="st-tokens">100<em>+</em></b></div>
+    <div class="stat"><span>Smart wallets ranked</span><b id="st-wallets">120</b></div>
+    <div class="stat"><span>Refresh cycle</span><b>5<em>min</em></b></div>
+    <div class="stat"><span>Data source</span><b>100<em>% chain</em></b></div>
+  </div>
+</div>
+
+<section id="features">
+  <h2>System modules</h2>
+  <p class="sub">No bought labels. No black box. Every signal computed live from Solana itself.</p>
+  <div class="feats">
+    <div class="feat"><span class="num">01</span><h3>Token flow board</h3>
+      <p>Net smart-money flow on the chain's most-active tokens — who's accumulating, who's distributing, with full buy/sell USD split per token.</p></div>
+    <div class="feat"><span class="num">02</span><h3>Win-rate leaderboard</h3>
+      <p>Every tracked wallet scored by realized-PnL win rate from its own swap history. The best traders float to the top, automatically.</p></div>
+    <div class="feat"><span class="num">03</span><h3>Token-gated alpha</h3>
+      <p>Win rates are public. The identities of elite wallets unlock by holding our token — verified on-chain with a free message signature, enforced server-side.</p></div>
+    <div class="feat"><span class="num">04</span><h3>Pump.fun launch radar</h3>
+      <p>Every new pump.fun launch — even un-bonded tokens seconds old — plus a filter for launches smart money already aped. Auto-releases at $100K mcap.</p></div>
+  </div>
+  <div class="mile">
+    <h3>⚠ Next unlock — pump.fun launch radar</h3>
+    <div class="bar"><i id="mile-bar"></i></div>
+    <div class="bar-lbl" id="mile-lbl">Loading milestone…</div>
+  </div>
+</section>
+
+<section id="roadmap">
+  <h2>Roadmap</h2>
+  <p class="sub">Features ship automatically as our token's market cap crosses each level —
+     enforced by the app itself, checked on-chain. No promises, just code.</p>
+  <div class="road">
+    <div class="rstep done">
+      <div class="rcap">DEPLOYED</div>
+      <h3>Core terminal <span class="rtag live">live</span></h3>
+      <p>Chain-wide token flow board, win-rate smart-money leaderboard, universal wallet sign-in, server-side token gating.</p>
+    </div>
+    <div class="rstep">
+      <div class="rcap">$100K MARKET CAP</div>
+      <h3>Pump.fun launch radar <span class="rtag lock">auto-unlocks</span></h3>
+      <p>Pre-bond launches seconds after creation, cross-referenced against the smart-money cohort. Unlocks for everyone the moment the milestone is hit.</p>
+    </div>
+    <div class="rstep">
+      <div class="rcap">$250K MARKET CAP</div>
+      <h3>Smart-money alerts <span class="rtag lock">locked</span></h3>
+      <p>Telegram &amp; Discord bots that ping you the second a high-win-rate wallet opens a new position — token, size, entry.</p>
+    </div>
+    <div class="rstep">
+      <div class="rcap">$500K MARKET CAP</div>
+      <h3>Watchlists &amp; copy dashboard <span class="rtag lock">locked</span></h3>
+      <p>Follow specific wallets with live PnL, average hold time, and full entry/exit history per wallet.</p>
+    </div>
+    <div class="rstep">
+      <div class="rcap">$1M MARKET CAP</div>
+      <h3>Public API + multi-chain <span class="rtag lock">locked</span></h3>
+      <p>Holder-gated REST API for builders, plus smart-money tracking expansion to Base and Ethereum.</p>
+    </div>
+    <div class="rstep">
+      <div class="rcap">$2.5M MARKET CAP</div>
+      <h3>Mobile + push alerts <span class="rtag lock">locked</span></h3>
+      <p>Installable mobile terminal with push notifications and portfolio tracking.</p>
+    </div>
+    <div class="rstep">
+      <div class="rcap">$5M MARKET CAP</div>
+      <h3>AI analyst + holder rewards <span class="rtag lock">locked</span></h3>
+      <p>An AI layer explaining why smart money is moving, rug-risk scoring on launches, and a buyback program funded by platform growth.</p>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <h2>FAQ</h2>
+  <p class="sub">The five questions everyone asks first.</p>
+  <div class="faq">
+    <details open>
+      <summary><span class="q">Q.01</span>What is Sentinels?</summary>
+      <p>A real-time analytics terminal tracking the most successful wallets on Solana. Instead of
+         buying wallet labels from a third party, we discover smart money directly from on-chain swaps —
+         the most active traders across the chain's traded tokens, scored by their actual realized win
+         rate. You see what they buy, what they sell, and how good they really are.</p>
+    </details>
+    <details>
+      <summary><span class="q">Q.02</span>How do you decide which wallets are smart money?</summary>
+      <p>Every refresh we scan the most-active tokens chain-wide, parse their recent swaps on-chain,
+         and aggregate every active trader. Each wallet is then scored by <b>win rate</b> — the share
+         of its closed trades that were profitable, computed from its own swap history using an
+         average-cost basis. High win rate + meaningful volume = smart money. A transparent,
+         recomputed-live heuristic, not a static list.</p>
+    </details>
+    <details>
+      <summary><span class="q">Q.03</span>Is connecting my wallet safe?</summary>
+      <p>Yes. Connecting only asks your wallet to <b>sign a message</b> — never a transaction. A message
+         signature costs nothing, can't move funds, and can't approve anything. It simply proves you
+         control the wallet so the server can check your token balance. Every Solana wallet is
+         supported (Phantom, Solflare, Backpack, OKX, Coinbase and more) via the Wallet Standard.</p>
+    </details>
+    <details>
+      <summary><span class="q">Q.04</span>What do I unlock by holding the token?</summary>
+      <p>Win rates are free for everyone. Holding the required amount of our token unlocks the
+         <b>identities</b> of elite wallets — their addresses and the coins they're trading — plus
+         every future holder-gated feature on the roadmap. Verification is on-chain and enforced
+         server-side: the data simply never leaves the server for non-holders.</p>
+    </details>
+    <details>
+      <summary><span class="q">Q.05</span>Where does the data come from, and how fresh is it?</summary>
+      <p>Everything is computed from public on-chain data: swaps parsed via Helius, token discovery and
+         prices from GeckoTerminal, pump.fun launches from pump.fun's public feed. The flow board
+         refreshes every 5 minutes; the launch radar refreshes every few seconds and includes tokens
+         created moments ago. Analytics, not financial advice — memecoins are extremely high-risk.</p>
+    </details>
+  </div>
+</section>
+
+<footer>
+  Educational analytics platform. Smart-money detection is a transparent on-chain heuristic, not a
+  vetted track record — top traders can include snipers and bots. Nothing here is financial advice.
+  Memecoins are extremely volatile and high-risk; never trade more than you can afford to lose.
+</footer>
+
+<script>
+setInterval(() => {
+  const el = document.getElementById("utc");
+  if (el) el.textContent = new Date().toISOString().slice(11, 19) + " UTC";
+}, 1000);
+(async () => {
+  try {
+    const m = await (await fetch("/api/milestone")).json();
+    document.getElementById("mile-bar").style.width = (m.progress || 0) + "%";
+    document.getElementById("mile-lbl").textContent = m.reached
+      ? "MILESTONE REACHED — launch radar is LIVE for everyone."
+      : m.token_set
+        ? `$${(m.mcap||0).toLocaleString()} / $${(m.target||100000).toLocaleString()} market cap (${m.progress||0}%)`
+        : `Token launching soon — radar auto-unlocks at $${(m.target||100000).toLocaleString()} market cap.`;
+  } catch (e) {}
+  try {
+    const d = await (await fetch("/api/smartmoney?tf=24h")).json();
+    if (d.token_count) document.getElementById("st-tokens").textContent = d.token_count;
+    if (d.wallet_count) document.getElementById("st-wallets").textContent = d.wallet_count;
+  } catch (e) {}
+  try {
+    const s = await (await fetch("/api/site")).json();
+    if (s.contract_address) {
+      const v = document.getElementById("ca-val");
+      v.textContent = s.contract_address;
+      const cp = document.getElementById("ca-copy");
+      cp.hidden = false;
+      cp.onclick = () => { navigator.clipboard?.writeText(s.contract_address);
+        cp.textContent = "copied"; setTimeout(() => cp.textContent = "copy", 1200); };
+    }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
