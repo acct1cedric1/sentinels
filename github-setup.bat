@@ -7,6 +7,16 @@ REM ============================================================
 cd /d "%~dp0"
 title Sentinels - GitHub setup
 
+echo ============================================================
+echo  ANONYMITY NOTICE
+echo  Commits are authored as "sentinels" (no real name/email).
+echo  But the GitHub ACCOUNT you log in with below becomes the
+echo  PUBLIC repo owner. To stay anonymous, log in with an
+echo  anonymous GitHub account (not one under your real name).
+echo ============================================================
+echo.
+pause
+
 echo Checking for GitHub CLI...
 where gh >nul 2>nul
 if errorlevel 1 (
