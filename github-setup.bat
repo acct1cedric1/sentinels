@@ -38,6 +38,14 @@ gh repo create sentinels --public --source=. --remote=origin --push ^
   --description "Real-time Solana on-chain smart-money intelligence terminal"
 
 echo.
-echo Done. Your repo is live on GitHub.
+echo === Step 3: put the repo URL on the landing page (config.json) ===
+for /f "delims=" %%u in ('gh repo view --json url -q ".url"') do set "REPO_URL=%%u"
+if defined REPO_URL (
+  python -c "import json;p='config.json';d=json.load(open(p,encoding='utf-8'));d['github_url']='%REPO_URL%';json.dump(d,open(p,'w',encoding='utf-8'),indent=2)"
+  echo Landing page GitHub link set to %REPO_URL%
+)
+
+echo.
+echo Done. Your repo is live on GitHub and linked on the landing page.
 echo Future updates: just run  sync.bat
 pause

@@ -1,6 +1,7 @@
 {
   "helius_api_key": "PASTE_YOUR_HELIUS_KEY_HERE",
   "contract_address": "",
+  "github_url": "",
   "anthropic_api_key": "",
   "gating": {
     "enabled": true,

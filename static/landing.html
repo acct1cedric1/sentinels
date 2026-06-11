@@ -42,6 +42,12 @@ a{color:var(--green)}
 .nav nav a{color:var(--muted);text-decoration:none;font-size:11px;font-weight:600;
   letter-spacing:1.5px;text-transform:uppercase}
 .nav nav a:hover{color:var(--text)}
+.gh-link{display:flex;align-items:center;gap:7px;color:var(--muted) !important}
+.gh-link:hover{color:var(--green) !important}
+.gh-link svg{display:block}
+.gh-foot{display:inline-flex;align-items:center;gap:7px;color:var(--green);text-decoration:none;
+  margin-bottom:14px;font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.gh-foot:hover{text-decoration:underline}
 .cta{background:var(--green);color:#04130a !important;font-weight:700;padding:10px 18px;
   font-size:11px;letter-spacing:1px;text-decoration:none;border:1px solid var(--green);
   box-shadow:4px 4px 0 0 rgba(43,255,136,.22);text-transform:uppercase}
@@ -144,6 +150,10 @@ footer::before{content:"// DISCLAIMER";display:block;color:var(--line2);letter-s
     <a href="#features">Modules</a>
     <a href="#roadmap">Roadmap</a>
     <a href="#faq">FAQ</a>
+    <a id="gh-link" class="gh-link" href="#" target="_blank" rel="noopener" title="View source on GitHub" hidden>
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.52 11.52 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222 0 1.606-.015 2.898-.015 3.293 0 .322.218.694.825.576C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+      <span class="gh-txt">GitHub</span>
+    </a>
     <a class="cta" href="/app">Launch Terminal</a>
   </nav>
 </header>
@@ -278,6 +288,10 @@ footer::before{content:"// DISCLAIMER";display:block;color:var(--line2);letter-s
 </section>
 
 <footer>
+  <a id="gh-foot" class="gh-foot" href="#" target="_blank" rel="noopener" hidden>
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" style="vertical-align:-2px"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.52 11.52 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222 0 1.606-.015 2.898-.015 3.293 0 .322.218.694.825.576C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+    Open source on GitHub
+  </a>
   Educational analytics platform. Smart-money detection is a transparent on-chain heuristic, not a
   vetted track record — top traders can include snipers and bots. Nothing here is financial advice.
   Memecoins are extremely volatile and high-risk; never trade more than you can afford to lose.
@@ -312,6 +326,12 @@ setInterval(() => {
       cp.hidden = false;
       cp.onclick = () => { navigator.clipboard?.writeText(s.contract_address);
         cp.textContent = "copied"; setTimeout(() => cp.textContent = "copy", 1200); };
+    }
+    if (s.github_url) {
+      ["gh-link", "gh-foot"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.href = s.github_url; el.hidden = false; }
+      });
     }
   } catch (e) {}
 })();

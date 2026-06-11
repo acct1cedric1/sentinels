@@ -682,7 +682,8 @@ def site_config():
     except Exception:
         pass
     return {"brand": "Sentinels",
-            "contract_address": (cfg.get("contract_address") or "").strip()}
+            "contract_address": (cfg.get("contract_address") or "").strip(),
+            "github_url": (cfg.get("github_url") or "").strip()}
 
 
 def compute_balance_usd(pubkey):
