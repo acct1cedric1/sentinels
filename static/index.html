@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SENTINELS_ · Solana Flow Terminal</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="style.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -117,6 +118,11 @@
   <section id="view-pumpfun" class="view hidden">
     <div class="pf-controls">
       <label class="switch"><input type="checkbox" id="pf-smart"> Smart money only</label>
+      <select id="pf-status" class="pf-select">
+        <option value="all">All launches</option>
+        <option value="curve">On curve only</option>
+        <option value="bonded">Bonded only</option>
+      </select>
       <span class="pf-note" id="pf-note">Live feed of every new pump.fun launch — including un-bonded tokens seconds old.</span>
       <span class="pf-updated" id="pf-updated"></span>
     </div>
@@ -128,10 +134,10 @@
             <th class="lft">Token</th>
             <th>Age</th>
             <th>Mkt Cap</th>
-            <th>Status</th>
+            <th>Bond Progress</th>
             <th>Replies</th>
             <th>Smart Buyers</th>
-            <th>Links</th>
+            <th>Trade</th>
           </tr>
         </thead>
         <tbody id="pf-body">

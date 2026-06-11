@@ -346,7 +346,17 @@ function hookCopy() {
 }
 
 // ---- pump.fun radar ----
-STATE.pf = { smart: false, data: null, loaded: false };
+STATE.pf = { smart: false, status: "all", data: null, loaded: false };
+
+function bondCell(c) {
+  if (c.bonded) return `<div class="bondcell"><span class="tag acc">Bonded</span></div>`;
+  const pct = c.bond_pct ?? 0;
+  const sol = c.sol_raised != null ? `${c.sol_raised} / 85 SOL` : "";
+  return `<div class="bondcell">
+    <div class="bondbar"><i style="width:${pct}%"></i></div>
+    <span class="bond-lbl">${pct}% <span class="muted">${sol}</span></span>
+  </div>`;
+}
 
 function fmtAge(s) {
   if (s == null) return "—";
@@ -396,6 +406,8 @@ function renderPumpfun() {
     : "Live feed of every new pump.fun launch — including un-bonded tokens seconds old.";
   const tb = document.getElementById("pf-body");
   let rows = d.coins || [];
+  if (STATE.pf.status === "curve") rows = rows.filter(c => !c.bonded);
+  if (STATE.pf.status === "bonded") rows = rows.filter(c => c.bonded);
   if (STATE.search) {
     const q = STATE.search.toLowerCase();
     rows = rows.filter(c => (c.symbol + " " + c.name + " " + c.mint).toLowerCase().includes(q));
@@ -409,20 +421,23 @@ function renderPumpfun() {
   const now = Date.now();
   tb.innerHTML = rows.map(c => {
     const age = c.created_ms ? Math.max(0, Math.floor((now - c.created_ms) / 1000)) : c.age_s;
-    const status = c.bonded ? `<span class="tag acc">Bonded</span>` : `<span class="tag curve">Curve</span>`;
     const smart = c.smart_buyers
       ? `<span class="wcount"><span class="dot"></span>${c.smart_buyers}</span>
          <div class="pf-aliases">${(c.smart_aliases || []).map(a => `<span class="pill">${esc(a)}</span>`).join("")}</div>`
       : `<span class="muted">—</span>`;
+    const trade = c.bonded
+      ? `<a class="ext" href="https://jup.ag/swap/SOL-${esc(c.mint)}" target="_blank" onclick="event.stopPropagation()">Jupiter ↗</a><br>
+         <a class="ext" href="https://pump.fun/coin/${esc(c.mint)}" target="_blank" onclick="event.stopPropagation()">pump.fun ↗</a>`
+      : `<a class="ext" href="https://pump.fun/coin/${esc(c.mint)}" target="_blank" onclick="event.stopPropagation()">pump.fun ↗</a>`;
     return `<tr>
       <td class="lft"><div class="tok">${tokenLogo({ symbol: c.symbol, logo: c.image }, "")}
         <div><div class="nm">${esc(c.symbol)}</div><div class="sb">${esc((c.name || "").slice(0, 24))}</div></div></div></td>
       <td class="pf-age ${age <= 60 ? "up" : "muted"}" data-ts="${c.created_ms || ""}">${fmtAge(age)}</td>
       <td>${usd(c.usd_mcap)}</td>
-      <td>${status}</td>
+      <td>${bondCell(c)}</td>
       <td class="muted">${c.replies ?? 0}</td>
       <td>${smart}</td>
-      <td><a class="ext" href="https://pump.fun/coin/${esc(c.mint)}" target="_blank" onclick="event.stopPropagation()">pump.fun ↗</a></td>
+      <td>${trade}</td>
     </tr>`;
   }).join("");
 }
@@ -509,6 +524,7 @@ function switchTab(name) {
   else render();
 }
 document.getElementById("pf-smart").onchange = e => { STATE.pf.smart = e.target.checked; loadPumpfun(); };
+document.getElementById("pf-status").onchange = e => { STATE.pf.status = e.target.value; renderPumpfun(); };
 document.querySelectorAll(".tab").forEach(t => t.onclick = () => switchTab(t.dataset.tab));
 document.querySelectorAll("#tok-grid th[data-sort]").forEach(th => th.onclick = () => {
   if (STATE.sortTok === th.dataset.sort) STATE.dirTok *= -1;

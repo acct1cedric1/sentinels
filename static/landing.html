@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SENTINELS_ — Follow the wallets that win</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -45,6 +46,10 @@ a{color:var(--green)}
 .gh-link{display:flex;align-items:center;gap:7px;color:var(--muted) !important}
 .gh-link:hover{color:var(--green) !important}
 .gh-link svg{display:block}
+.gh-link.soon{cursor:default;opacity:.85}
+.gh-soon{font-size:8px;font-weight:700;letter-spacing:1px;color:var(--amber);
+  border:1px solid var(--amber);padding:1px 5px;animation:pulse 2s infinite}
+.gh-link:not(.soon) .gh-soon{display:none}
 .gh-foot{display:inline-flex;align-items:center;gap:7px;color:var(--green);text-decoration:none;
   margin-bottom:14px;font-size:11px;letter-spacing:1px;text-transform:uppercase}
 .gh-foot:hover{text-decoration:underline}
@@ -150,9 +155,9 @@ footer::before{content:"// DISCLAIMER";display:block;color:var(--line2);letter-s
     <a href="#features">Modules</a>
     <a href="#roadmap">Roadmap</a>
     <a href="#faq">FAQ</a>
-    <a id="gh-link" class="gh-link" href="#" target="_blank" rel="noopener" title="View source on GitHub" hidden>
+    <a id="gh-link" class="gh-link soon" href="#" rel="noopener" title="Source code reveal coming soon">
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.52 11.52 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222 0 1.606-.015 2.898-.015 3.293 0 .322.218.694.825.576C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-      <span class="gh-txt">GitHub</span>
+      <span class="gh-txt">GitHub</span><span class="gh-soon" id="gh-soon">SOON</span>
     </a>
     <a class="cta" href="/app">Launch Terminal</a>
   </nav>
@@ -210,6 +215,20 @@ footer::before{content:"// DISCLAIMER";display:block;color:var(--line2);letter-s
       <div class="rcap">DEPLOYED</div>
       <h3>Core terminal <span class="rtag live">live</span></h3>
       <p>Chain-wide token flow board, win-rate smart-money leaderboard, universal wallet sign-in, server-side token gating.</p>
+    </div>
+    <div class="rstep">
+      <div class="rcap">PRE-BOND · LAUNCH WEEK</div>
+      <h3>Trust checklist <span class="rtag lock">in progress</span></h3>
+      <p>Token launches on pump.fun with the trust basics done in week one: <b>supply lock</b>,
+         <b>DEX listing paid</b> &amp; socials verified, and the <b>GitHub open-source reveal</b> —
+         the full codebase goes public so anyone can audit what the terminal does.</p>
+    </div>
+    <div class="rstep">
+      <div class="rcap">TOKEN BONDED</div>
+      <h3>One-click in-app trading <span class="rtag lock">unlocks at bond</span></h3>
+      <p>The moment our token graduates the bonding curve, in-app trading unlocks: buy or sell any
+         tracked token with your connected wallet straight from the terminal — one click on any row,
+         no tab-switching to a DEX.</p>
     </div>
     <div class="rstep">
       <div class="rcap">$100K MARKET CAP</div>
@@ -327,11 +346,16 @@ setInterval(() => {
       cp.onclick = () => { navigator.clipboard?.writeText(s.contract_address);
         cp.textContent = "copied"; setTimeout(() => cp.textContent = "copy", 1200); };
     }
+    const gl = document.getElementById("gh-link");
     if (s.github_url) {
-      ["gh-link", "gh-foot"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) { el.href = s.github_url; el.hidden = false; }
-      });
+      gl.classList.remove("soon");
+      gl.href = s.github_url;
+      gl.target = "_blank";
+      gl.title = "View source on GitHub";
+      const gf = document.getElementById("gh-foot");
+      if (gf) { gf.href = s.github_url; gf.hidden = false; }
+    } else {
+      gl.onclick = (e) => e.preventDefault();   // SOON state: not clickable yet
     }
   } catch (e) {}
 })();

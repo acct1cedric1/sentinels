@@ -96,6 +96,10 @@ def newest_coins(limit=48):
     out = []
     for c in d:
         created = _num(c.get("created_timestamp")) / 1000.0
+        bonded = bool(c.get("complete"))
+        sol_raised = _num(c.get("real_sol_reserves")) / 1e9     # lamports -> SOL
+        # pump.fun graduates a curve at ~85 SOL collected
+        bond_pct = 100.0 if bonded else max(0.0, min(99.0, sol_raised / 85.0 * 100))
         out.append({
             "mint": c.get("mint"),
             "symbol": c.get("symbol") or "?",
@@ -104,7 +108,9 @@ def newest_coins(limit=48):
             "created_ms": int(_num(c.get("created_timestamp"))),
             "age_s": max(0, int(now - created)) if created else None,
             "usd_mcap": _num(c.get("usd_market_cap")),
-            "bonded": bool(c.get("complete")),
+            "bonded": bonded,
+            "sol_raised": round(sol_raised, 2),
+            "bond_pct": round(bond_pct, 1),
             "bonding_curve": c.get("bonding_curve"),
             "creator": c.get("creator"),
             "replies": int(_num(c.get("reply_count"))),

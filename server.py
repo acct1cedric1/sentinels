@@ -622,13 +622,17 @@ def pumpfun_milestone(session=None):
     """Auto-release check: unlocked for everyone once the project token's
     market cap reaches the target. Admin wallets can preview before launch."""
     g = auth.gating()
-    target = float(g.get("pumpfun_mcap_target", 100000) or 100000)
+    try:
+        target = float(g.get("pumpfun_mcap_target", 100000))
+    except (TypeError, ValueError):
+        target = 100000.0
     mint = (g.get("token_mint") or "").strip()
     mcap = market.token_mcap(mint) if mint else 0.0
-    reached = mcap >= target
+    reached = mcap >= target          # target <= 0 force-releases the feature
     admin = bool(session and session.get("pubkey") in g["admin_wallets"])
+    progress = 100.0 if reached else (round(min(100.0, mcap / target * 100), 1) if target > 0 else 0.0)
     return {"target": target, "mcap": round(mcap, 2), "token_set": bool(mint),
-            "progress": round(min(100.0, mcap / target * 100), 1) if target else 0,
+            "progress": progress,
             "unlocked": reached or admin, "reached": reached,
             "admin_preview": admin and not reached}
 

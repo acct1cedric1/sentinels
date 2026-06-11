@@ -198,6 +198,16 @@ tbody tr:hover td:first-child{box-shadow:inset 2px 0 0 var(--green)}
 
 /* ---- pump.fun radar ---- */
 .pf-controls{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:2px 0 12px}
+.pf-select{background:var(--panel);border:1px solid var(--line);color:var(--text);
+  padding:9px 12px;font-size:11px;outline:none;border-radius:0;font-family:inherit;
+  text-transform:uppercase;letter-spacing:.5px}
+.pf-select:focus{border-color:var(--green)}
+.bondcell{display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:130px}
+.bondbar{width:120px;height:6px;border:1px solid var(--line2);background:#00000060;padding:1px}
+.bondbar i{display:block;height:100%;min-width:1px;
+  background:repeating-linear-gradient(90deg,var(--amber) 0 4px,transparent 4px 6px)}
+.bond-lbl{font-size:10px;color:var(--amber);font-variant-numeric:tabular-nums}
+.bond-lbl .muted{font-size:9px}
 .pf-note{color:var(--muted);font-size:11px;flex:1;min-width:220px}
 .pf-updated{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
 .pf-aliases{margin-top:3px}
