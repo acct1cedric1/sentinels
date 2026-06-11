@@ -119,9 +119,9 @@
     <div class="pf-controls">
       <label class="switch"><input type="checkbox" id="pf-smart"> Smart money only</label>
       <select id="pf-status" class="pf-select">
-        <option value="all">All launches</option>
-        <option value="curve">On curve only</option>
-        <option value="bonded">Bonded only</option>
+        <option value="new">Newest launches</option>
+        <option value="grad">Graduating soon</option>
+        <option value="bonded">Recently bonded</option>
       </select>
       <span class="pf-note" id="pf-note">Live feed of every new pump.fun launch — including un-bonded tokens seconds old.</span>
       <span class="pf-updated" id="pf-updated"></span>
@@ -170,6 +170,35 @@
       <button id="chat-send">SEND</button>
     </div>
     <div class="chat-note" id="chat-note"></div>
+  </div>
+</div>
+
+<div id="tmodal" class="wmodal hidden">
+  <div class="wmodal-card">
+    <button class="close" id="tmodalClose">✕</button>
+    <h3 id="tmodalTitle">Trade</h3>
+    <div class="t-body">
+      <div class="t-side">
+        <button id="t-buy" class="t-sidebtn active">BUY</button>
+        <button id="t-sell" class="t-sidebtn">SELL</button>
+      </div>
+      <div id="t-amounts" class="t-row"></div>
+      <div class="t-row t-slip">
+        <span class="t-lbl">Slippage</span>
+        <select id="t-slippage">
+          <option value="100">1%</option>
+          <option value="250" selected>2.5%</option>
+          <option value="500">5%</option>
+          <option value="1000">10%</option>
+        </select>
+        <button id="t-quote" class="t-quotebtn">GET QUOTE</button>
+      </div>
+      <div id="t-preview" class="t-preview"></div>
+      <button id="t-exec" class="t-execbtn" disabled>EXECUTE SWAP</button>
+      <div id="t-msg" class="t-msg"></div>
+      <div class="t-note">Non-custodial: the transaction is built via Jupiter and signed
+        only by YOUR wallet. Sentinels never touches your funds.</div>
+    </div>
   </div>
 </div>
 

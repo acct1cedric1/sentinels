@@ -48,6 +48,8 @@ function renderWalletList() {
     (b.onclick = () => login(WALLETS[+b.dataset.i])));
 }
 
+let CONNECTED = { wallet: null, account: null };   // kept for in-app trading
+
 async function login(wallet) {
   const msg = $("wmodalMsg");
   try {
@@ -55,6 +57,7 @@ async function login(wallet) {
     const { accounts } = await wallet.features["standard:connect"].connect();
     const account = accounts[0];
     if (!account) throw new Error("no account returned");
+    CONNECTED = { wallet, account };
 
     msg.textContent = "Fetching sign-in challenge…";
     const ch = await (await fetch("/api/auth/nonce")).json();
@@ -103,8 +106,36 @@ $("connect").onclick = () =>
 $("wmodalClose").onclick = close;
 $("wmodal").onclick = (e) => { if (e.target.id === "wmodal") close(); };
 
-// let app.js open the modal from a gated row click
-window.SMwallet = { open, logout };
+// ---- trading support ----
+function getAccount() { return CONNECTED.account ? CONNECTED : null; }
+
+async function signAndSend(txB64) {
+  const c = CONNECTED;
+  if (!c.wallet || !c.account) throw new Error("wallet not connected — sign in first");
+  const feat = c.wallet.features["solana:signAndSendTransaction"];
+  if (!feat) throw new Error(`${c.wallet.name} does not support signAndSendTransaction`);
+  const raw = Uint8Array.from(atob(txB64), (ch) => ch.charCodeAt(0));
+  const out = await feat.signAndSendTransaction({
+    account: c.account, chain: "solana:mainnet", transaction: raw,
+  });
+  const sig = out[0] && out[0].signature;
+  if (!sig) throw new Error("wallet returned no signature");
+  // signature arrives as bytes -> base58-encode for the explorer link
+  return b58(sig instanceof Uint8Array ? sig : new Uint8Array(sig));
+}
+
+const B58A = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+function b58(bytes) {
+  let n = 0n;
+  for (const b of bytes) n = (n << 8n) + BigInt(b);
+  let s = "";
+  while (n > 0n) { s = B58A[Number(n % 58n)] + s; n /= 58n; }
+  for (const b of bytes) { if (b === 0) s = "1" + s; else break; }
+  return s;
+}
+
+// let app.js open the modal from a gated row click + drive trades
+window.SMwallet = { open, logout, getAccount, signAndSend };
 
 // restore an existing session on load (no library needed)
 (async () => {

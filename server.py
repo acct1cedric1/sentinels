@@ -36,6 +36,7 @@ import market
 import auth
 import pumpfun
 import chat
+import trade
 
 # Windows consoles default to cp1252 and choke on non-Latin-1 glyphs in prints.
 for _stream in (sys.stdout, sys.stderr):
@@ -637,21 +638,26 @@ def pumpfun_milestone(session=None):
             "admin_preview": admin and not reached}
 
 
-def build_pumpfun(smart_only=False):
-    """Newest pump.fun launches (incl. un-bonded, seconds old). With smart_only,
-    keep only coins already bought by a wallet from the smart-money cohort."""
-    ck = f"pf|{int(smart_only)}"
+def build_pumpfun(smart_only=False, view="new"):
+    """Pump.fun radar feed. Views: new (freshest launches), grad (graduating soon —
+    top un-bonded curves by mcap), bonded (recently graduated). With smart_only
+    (new view only), keep coins already bought by the smart-money cohort."""
+    if view not in ("new", "grad", "bonded"):
+        view = "new"
+    if view != "new":
+        smart_only = False          # cross-ref reads bonding-curve swaps; new view only
+    ck = f"pf|{view}|{int(smart_only)}"
     now = time.time()
-    ttl = PF_SMART_TTL if smart_only else 6
+    ttl = PF_SMART_TTL if smart_only else (6 if view == "new" else 20)
     with _PF_LOCK:
         hit = _PF_CACHE.get(ck)
         if hit and now - hit[0] < ttl:
             return hit[1]
 
-    coins = pumpfun.newest_coins(48)
+    coins = pumpfun.fetch_coins(view, 48)
     if isinstance(coins, dict):
         return {"error": coins.get("_error", "pumpfun_unavailable"), "coins": [],
-                "count": 0, "smart_only": smart_only}
+                "count": 0, "smart_only": smart_only, "view": view}
 
     if smart_only:
         with _LOCK:
@@ -671,7 +677,8 @@ def build_pumpfun(smart_only=False):
         coins = matched
 
     payload = {"updated": datetime.datetime.utcnow().strftime("%H:%M:%S UTC"),
-               "count": len(coins), "coins": coins, "smart_only": smart_only}
+               "count": len(coins), "coins": coins, "smart_only": smart_only,
+               "view": view}
     with _PF_LOCK:
         _PF_CACHE[ck] = (time.time(), payload)
     return payload
@@ -772,7 +779,9 @@ class Handler(BaseHTTPRequestHandler):
                  ".js": "application/javascript; charset=utf-8",
                  ".svg": "image/svg+xml"}.get(os.path.splitext(fp)[1], "application/octet-stream")
         with open(fp, "rb") as f:
-            self._send(200, f.read(), ctype)
+            # no-cache = browsers must revalidate, so users never run stale JS after updates
+            self._send(200, f.read(), ctype,
+                       extra_headers=[("Cache-Control", "no-cache")])
 
     def do_GET(self):
         path = self.path.split("?")[0]
@@ -795,15 +804,20 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path == "/api/pumpfun":
                 smart = q.get("smart", "0") == "1"
+                view = q.get("view", "new")
                 ms = pumpfun_milestone(self._session())
                 if not ms["unlocked"]:
                     self._send(200, {"locked": True, "milestone": ms, "coins": [],
-                                     "count": 0, "smart_only": smart})
+                                     "count": 0, "smart_only": smart, "view": view})
                     return
-                payload = dict(build_pumpfun(smart))
+                payload = dict(build_pumpfun(smart, view))
                 payload["locked"] = False
                 payload["milestone"] = ms
                 self._send(200, payload)
+                return
+            if path == "/api/trade/status":
+                ok, reason = trade.unlocked(self._session())
+                self._send(200, {"unlocked": ok, "reason": reason})
                 return
             if path == "/api/milestone":
                 self._send(200, pumpfun_milestone(self._session()))
@@ -875,6 +889,18 @@ class Handler(BaseHTTPRequestHandler):
                 pubkey = s["pubkey"]
                 text = (self._body_json().get("text") or "")
                 self._send(200, chat.post(pubkey, alias_for(pubkey), text))
+                return
+            if path in ("/api/trade/quote", "/api/trade/swap"):
+                s = self._session()
+                if not s or not s.get("pubkey"):
+                    self._send(401, {"error": "auth", "reason": "Connect your wallet first."})
+                    return
+                b = self._body_json()
+                self._send(200, trade.prepare(
+                    s, b.get("side"), b.get("mint"),
+                    sol_amount=b.get("sol_amount"), pct=b.get("pct"),
+                    slippage_bps=b.get("slippage_bps", 100),
+                    execute=(path == "/api/trade/swap")))
                 return
         except Exception as e:
             self._send(500, {"error": str(e)})

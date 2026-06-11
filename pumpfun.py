@@ -84,10 +84,40 @@ def _num(x, d=0.0):
         return d
 
 
-def newest_coins(limit=48):
-    """Freshest pump.fun launches, newest first (includes un-bonded)."""
-    d = _get(f"/coins?offset=0&limit={min(limit,100)}&sort=created_timestamp"
-             f"&order=DESC&includeNsfw=true", ttl=5)
+# Per-mint (timestamp, sol_raised) history for raise-velocity computation.
+_vel = {}
+_vel_lock = threading.Lock()
+
+
+def fetch_coins(view="new", limit=48):
+    """Pump.fun coins for one of three radar views:
+         new    — freshest launches, newest first (includes 0s-old, un-bonded)
+         grad   — 'graduating soon': top un-bonded curves by market cap
+         bonded — recently bonded coins, by last trade
+    """
+    if view == "bonded":
+        path = (f"/coins?offset=0&limit={min(limit,100)}&sort=last_trade_timestamp"
+                f"&order=DESC&includeNsfw=true&complete=true")
+        d = _get(path, ttl=20)
+    elif view == "grad":
+        # the `complete` param is ignored on the mcap sort — over-fetch two pages,
+        # keep genuinely mid-curve coins, rank by curve progress (closest to bond first)
+        d = []
+        for off in (0, 100):
+            page = _get(f"/coins?offset={off}&limit=100&sort=market_cap&order=DESC"
+                        f"&includeNsfw=true", ttl=20)
+            if isinstance(page, list):
+                d.extend(page)
+        if not d:
+            return {"_error": "bad_response"}
+        d = [c for c in d if not c.get("complete")
+             and _num(c.get("real_sol_reserves")) / 1e9 >= 5]      # real curve traction
+        d.sort(key=lambda c: _num(c.get("real_sol_reserves")), reverse=True)
+        d = d[:limit]
+    else:
+        path = (f"/coins?offset=0&limit={min(limit,100)}&sort=created_timestamp"
+                f"&order=DESC&includeNsfw=true")
+        d = _get(path, ttl=5)
     if isinstance(d, dict):
         return {"_error": d.get("_error", "bad_response")}
     if not isinstance(d, list):
@@ -100,6 +130,19 @@ def newest_coins(limit=48):
         sol_raised = _num(c.get("real_sol_reserves")) / 1e9     # lamports -> SOL
         # pump.fun graduates a curve at ~85 SOL collected
         bond_pct = 100.0 if bonded else max(0.0, min(99.0, sol_raised / 85.0 * 100))
+        # raise velocity (SOL/min) from the previous sighting of this mint
+        vel = None
+        mint = c.get("mint")
+        if mint and not bonded:
+            with _vel_lock:
+                prev = _vel.get(mint)
+                _vel[mint] = (now, sol_raised)
+                if len(_vel) > 2000:                      # keep the map bounded
+                    cutoff = now - 3600
+                    for k in [k for k, (t, _) in _vel.items() if t < cutoff]:
+                        _vel.pop(k, None)
+            if prev and now - prev[0] >= 20 and now - prev[0] <= 1800:
+                vel = round(max(0.0, (sol_raised - prev[1]) / ((now - prev[0]) / 60.0)), 2)
         out.append({
             "mint": c.get("mint"),
             "symbol": c.get("symbol") or "?",
@@ -111,6 +154,7 @@ def newest_coins(limit=48):
             "bonded": bonded,
             "sol_raised": round(sol_raised, 2),
             "bond_pct": round(bond_pct, 1),
+            "vel": vel,
             "bonding_curve": c.get("bonding_curve"),
             "creator": c.get("creator"),
             "replies": int(_num(c.get("reply_count"))),
@@ -118,6 +162,11 @@ def newest_coins(limit=48):
             "twitter": c.get("twitter"), "website": c.get("website"),
         })
     return out
+
+
+def newest_coins(limit=48):
+    """Back-compat wrapper: the 'new' radar view."""
+    return fetch_coins("new", limit)
 
 
 def coin_buyers(bonding_curve, mint, limit=30):

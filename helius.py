@@ -189,6 +189,36 @@ def token_balance(owner, mint, ttl=30):
     return total
 
 
+def token_balance_raw(owner, mint, ttl=15):
+    """(raw_amount:int, decimals:int|None) of `mint` held by `owner` — for swap sizing."""
+    body = {"jsonrpc": "2.0", "id": "raw", "method": "getTokenAccountsByOwner",
+            "params": [owner, {"mint": mint}, {"encoding": "jsonParsed"}]}
+    d = _request("POST", RPC_URL, params={"api-key": API_KEY}, body=body, ttl=ttl)
+    if not isinstance(d, dict) or d.get("_error"):
+        return 0, None
+    total, decimals = 0, None
+    for acc in ((d.get("result") or {}).get("value") or []):
+        try:
+            ta = acc["account"]["data"]["parsed"]["info"]["tokenAmount"]
+            total += int(ta.get("amount") or 0)
+            decimals = int(ta.get("decimals"))
+        except Exception:
+            pass
+    return total, decimals
+
+
+def token_decimals(mint, ttl=3600):
+    """Decimals for a mint via DAS getAsset (defaults to 6 — the pump.fun standard)."""
+    body = {"jsonrpc": "2.0", "id": "dec", "method": "getAsset",
+            "params": {"id": mint}}
+    d = _request("POST", RPC_URL, params={"api-key": API_KEY}, body=body, ttl=ttl)
+    try:
+        dec = ((d.get("result") or {}).get("token_info") or {}).get("decimals")
+        return int(dec) if dec is not None else 6
+    except Exception:
+        return 6
+
+
 def sol_balance(owner, ttl=30):
     """Native SOL balance of `owner`."""
     body = {"jsonrpc": "2.0", "id": "sol", "method": "getBalance", "params": [owner]}

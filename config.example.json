@@ -9,6 +9,7 @@
     "token_mint": "",
     "min_usd": 5,
     "admin_wallets": [],
-    "pumpfun_mcap_target": 100000
+    "pumpfun_mcap_target": 100000,
+    "trading_unlocked": false
   }
 }

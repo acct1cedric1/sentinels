@@ -165,7 +165,7 @@ window.SM = {
     this.auth = status;
     updateConnectButton();
     try { chatLockState(); } catch (e) {}
-    load(false);
+    loadTradeStatus().then(() => load(false));
   },
 };
 
@@ -293,7 +293,8 @@ async function openTokenDrawer(t) {
     <div class="d-sub">${esc(t.address)} <button class="copy" data-copy="${esc(t.address)}">copy</button>
       <a class="ext" href="https://dexscreener.com/solana/${esc(t.address)}" target="_blank">DexScreener ↗</a>
       <a class="ext" href="https://www.geckoterminal.com/solana/tokens/${esc(t.address)}" target="_blank">GeckoTerminal ↗</a>
-      <a class="ext" href="https://solscan.io/token/${esc(t.address)}" target="_blank">Solscan ↗</a></div>
+      <a class="ext" href="https://solscan.io/token/${esc(t.address)}" target="_blank">Solscan ↗</a>
+      ${tradeBtn(t.address, t.symbol)}</div>
     <div class="d-meta">
       <div><span>Price</span><b>${price(t.price)}</b></div>
       <div><span>24h</span><b class="${t.price_change_24h >= 0 ? "up" : "down"}">${pct(t.price_change_24h)}</b></div>
@@ -346,15 +347,16 @@ function hookCopy() {
 }
 
 // ---- pump.fun radar ----
-STATE.pf = { smart: false, status: "all", data: null, loaded: false };
+STATE.pf = { smart: false, view: "new", data: null, loaded: false };
 
 function bondCell(c) {
   if (c.bonded) return `<div class="bondcell"><span class="tag acc">Bonded</span></div>`;
   const pct = c.bond_pct ?? 0;
   const sol = c.sol_raised != null ? `${c.sol_raised} / 85 SOL` : "";
+  const vel = c.vel > 0 ? `<span class="vel">🔥 +${c.vel} SOL/min</span>` : "";
   return `<div class="bondcell">
     <div class="bondbar"><i style="width:${pct}%"></i></div>
-    <span class="bond-lbl">${pct}% <span class="muted">${sol}</span></span>
+    <span class="bond-lbl">${pct}% <span class="muted">${sol}</span></span>${vel}
   </div>`;
 }
 
@@ -367,7 +369,7 @@ function fmtAge(s) {
 
 async function loadPumpfun() {
   try {
-    const r = await fetch(`/api/pumpfun?smart=${STATE.pf.smart ? 1 : 0}`);
+    const r = await fetch(`/api/pumpfun?smart=${STATE.pf.smart ? 1 : 0}&view=${STATE.pf.view}`);
     STATE.pf.data = await r.json();
     STATE.pf.loaded = true;
     document.getElementById("cnt-pf").textContent = STATE.pf.data.locked ? "🔒" : (STATE.pf.data.count ?? 0);
@@ -406,8 +408,6 @@ function renderPumpfun() {
     : "Live feed of every new pump.fun launch — including un-bonded tokens seconds old.";
   const tb = document.getElementById("pf-body");
   let rows = d.coins || [];
-  if (STATE.pf.status === "curve") rows = rows.filter(c => !c.bonded);
-  if (STATE.pf.status === "bonded") rows = rows.filter(c => c.bonded);
   if (STATE.search) {
     const q = STATE.search.toLowerCase();
     rows = rows.filter(c => (c.symbol + " " + c.name + " " + c.mint).toLowerCase().includes(q));
@@ -425,13 +425,14 @@ function renderPumpfun() {
       ? `<span class="wcount"><span class="dot"></span>${c.smart_buyers}</span>
          <div class="pf-aliases">${(c.smart_aliases || []).map(a => `<span class="pill">${esc(a)}</span>`).join("")}</div>`
       : `<span class="muted">—</span>`;
-    const trade = c.bonded
-      ? `<a class="ext" href="https://jup.ag/swap/SOL-${esc(c.mint)}" target="_blank" onclick="event.stopPropagation()">Jupiter ↗</a><br>
-         <a class="ext" href="https://pump.fun/coin/${esc(c.mint)}" target="_blank" onclick="event.stopPropagation()">pump.fun ↗</a>`
-      : `<a class="ext" href="https://pump.fun/coin/${esc(c.mint)}" target="_blank" onclick="event.stopPropagation()">pump.fun ↗</a>`;
+    const trade = (c.bonded ? tradeBtn(c.mint, c.symbol) : "") +
+      (c.bonded
+        ? `<a class="ext" href="https://jup.ag/swap/SOL-${esc(c.mint)}" target="_blank" onclick="event.stopPropagation()">Jupiter ↗</a><br>
+           <a class="ext" href="https://pump.fun/coin/${esc(c.mint)}" target="_blank" onclick="event.stopPropagation()">pump.fun ↗</a>`
+        : `<a class="ext" href="https://pump.fun/coin/${esc(c.mint)}" target="_blank" onclick="event.stopPropagation()">pump.fun ↗</a>`);
     return `<tr>
-      <td class="lft"><div class="tok">${tokenLogo({ symbol: c.symbol, logo: c.image }, "")}
-        <div><div class="nm">${esc(c.symbol)}</div><div class="sb">${esc((c.name || "").slice(0, 24))}</div></div></div></td>
+      <td class="lft"><a class="tok tok-link" href="https://pump.fun/coin/${esc(c.mint)}" target="_blank" rel="noopener">${tokenLogo({ symbol: c.symbol, logo: c.image }, "")}
+        <div><div class="nm">${esc(c.symbol)} <span class="ext-mini">↗</span></div><div class="sb">${esc((c.name || "").slice(0, 24))}</div></div></a></td>
       <td class="pf-age ${age <= 60 ? "up" : "muted"}" data-ts="${c.created_ms || ""}">${fmtAge(age)}</td>
       <td>${usd(c.usd_mcap)}</td>
       <td>${bondCell(c)}</td>
@@ -452,6 +453,112 @@ setInterval(() => {
   });
 }, 1000);
 setInterval(() => { if (STATE.tab === "pumpfun") loadPumpfun(); }, 6000);
+
+// ---- in-app trading (Jupiter; locked until token bonds, admins preview) ----
+STATE.trade = { unlocked: false, reason: "", t: null };
+
+async function loadTradeStatus() {
+  try {
+    const d = await (await fetch("/api/trade/status")).json();
+    STATE.trade.unlocked = !!d.unlocked;
+    STATE.trade.reason = d.reason || "";
+  } catch (e) { STATE.trade.unlocked = false; }
+}
+
+function tradeBtn(mint, symbol) {
+  if (!STATE.trade.unlocked) return "";
+  return `<button class="t-open" data-mint="${esc(mint)}" data-sym="${esc(symbol)}"
+    onclick="event.stopPropagation();openTrade(this.dataset.mint,this.dataset.sym)">⚡ TRADE</button>`;
+}
+
+const T = { mint: null, sym: "", side: "buy", amount: 0.1, pct: 50, quoting: false };
+
+function openTrade(mint, sym) {
+  if (!window.SMwallet || !window.SMwallet.getAccount()) {
+    if (window.SMwallet) window.SMwallet.open();
+    return;
+  }
+  T.mint = mint; T.sym = sym; T.side = "buy";
+  document.getElementById("tmodalTitle").textContent = `Trade ${sym}`;
+  document.getElementById("t-preview").innerHTML = "";
+  document.getElementById("t-msg").textContent = "";
+  document.getElementById("t-exec").disabled = true;
+  renderTradeSide();
+  document.getElementById("tmodal").classList.remove("hidden");
+}
+
+function renderTradeSide() {
+  document.getElementById("t-buy").classList.toggle("active", T.side === "buy");
+  document.getElementById("t-sell").classList.toggle("active", T.side === "sell");
+  const el = document.getElementById("t-amounts");
+  if (T.side === "buy") {
+    el.innerHTML = `<span class="t-lbl">Spend</span>` +
+      [0.05, 0.1, 0.5, 1].map(v =>
+        `<button class="t-amt ${T.amount === v ? "active" : ""}" data-v="${v}">${v} SOL</button>`).join("") +
+      `<input id="t-custom" type="number" min="0.001" step="0.01" placeholder="custom" value="${[0.05,0.1,0.5,1].includes(T.amount) ? "" : T.amount}">`;
+  } else {
+    el.innerHTML = `<span class="t-lbl">Sell</span>` +
+      [25, 50, 100].map(v =>
+        `<button class="t-amt ${T.pct === v ? "active" : ""}" data-v="${v}">${v}%</button>`).join("") +
+      `<span class="t-lbl" style="margin-left:4px">of balance</span>`;
+  }
+  el.querySelectorAll(".t-amt").forEach(b => b.onclick = () => {
+    if (T.side === "buy") T.amount = parseFloat(b.dataset.v); else T.pct = parseFloat(b.dataset.v);
+    renderTradeSide();
+  });
+  const c = document.getElementById("t-custom");
+  if (c) c.oninput = () => { const v = parseFloat(c.value); if (v > 0) T.amount = v; };
+  document.getElementById("t-preview").innerHTML = "";
+  document.getElementById("t-exec").disabled = true;
+}
+
+function tradeBody(execute) {
+  const body = { side: T.side, mint: T.mint,
+    slippage_bps: +document.getElementById("t-slippage").value };
+  if (T.side === "buy") body.sol_amount = T.amount; else body.pct = T.pct;
+  return body;
+}
+
+async function tradeQuote() {
+  const msg = document.getElementById("t-msg"), pv = document.getElementById("t-preview");
+  msg.textContent = "fetching route…"; msg.className = "t-msg";
+  try {
+    const d = await (await fetch("/api/trade/quote", { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify(tradeBody(false)) })).json();
+    if (d.error) { msg.textContent = d.reason || d.error; msg.className = "t-msg err"; return; }
+    const s = d.summary;
+    pv.innerHTML = T.side === "buy"
+      ? `<div>› You pay <b>${s.in}</b></div>
+         <div>› You receive ≈ <b class="up">${s.out_ui != null ? s.out_ui.toLocaleString(undefined,{maximumFractionDigits:0}) : "?"} ${esc(T.sym)}</b></div>
+         <div class="muted">price impact ${s.price_impact_pct ?? "?"}% · slippage ${(s.slippage_bps/100)}%</div>`
+      : `<div>› You sell <b>${s.in_ui != null ? s.in_ui.toLocaleString(undefined,{maximumFractionDigits:0}) : "?"} ${esc(T.sym)}</b> (${s.pct}%)</div>
+         <div>› You receive ≈ <b class="up">${(s.out_sol ?? 0).toFixed(4)} SOL</b></div>
+         <div class="muted">price impact ${s.price_impact_pct ?? "?"}% · slippage ${(s.slippage_bps/100)}%</div>`;
+    msg.textContent = "";
+    document.getElementById("t-exec").disabled = false;
+  } catch (e) { msg.textContent = "quote failed — retry"; msg.className = "t-msg err"; }
+}
+
+async function tradeExec() {
+  const msg = document.getElementById("t-msg");
+  const btn = document.getElementById("t-exec");
+  btn.disabled = true;
+  msg.className = "t-msg";
+  try {
+    msg.textContent = "building transaction…";
+    const d = await (await fetch("/api/trade/swap", { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify(tradeBody(true)) })).json();
+    if (d.error || !d.tx) { msg.textContent = d.reason || d.error || "build failed"; msg.className = "t-msg err"; btn.disabled = false; return; }
+    msg.textContent = "approve in your wallet…";
+    const sig = await window.SMwallet.signAndSend(d.tx);
+    msg.className = "t-msg ok";
+    msg.innerHTML = `✓ sent — <a class="ext" href="https://solscan.io/tx/${sig}" target="_blank">view on Solscan ↗</a>`;
+  } catch (e) {
+    msg.textContent = "cancelled or failed: " + (e.message || e);
+    msg.className = "t-msg err";
+    btn.disabled = false;
+  }
+}
 
 // ---- community chat ----
 let _chatLastId = 0, _chatOpen = false;
@@ -524,7 +631,19 @@ function switchTab(name) {
   else render();
 }
 document.getElementById("pf-smart").onchange = e => { STATE.pf.smart = e.target.checked; loadPumpfun(); };
-document.getElementById("pf-status").onchange = e => { STATE.pf.status = e.target.value; renderPumpfun(); };
+document.getElementById("pf-status").onchange = e => {
+  STATE.pf.view = e.target.value;
+  const smart = document.getElementById("pf-smart");
+  smart.disabled = STATE.pf.view !== "new";          // cross-ref only works on fresh curves
+  if (smart.disabled) { smart.checked = false; STATE.pf.smart = false; }
+  loadPumpfun();
+};
+document.getElementById("tmodalClose").onclick = () => document.getElementById("tmodal").classList.add("hidden");
+document.getElementById("tmodal").onclick = e => { if (e.target.id === "tmodal") e.currentTarget.classList.add("hidden"); };
+document.getElementById("t-buy").onclick = () => { T.side = "buy"; renderTradeSide(); };
+document.getElementById("t-sell").onclick = () => { T.side = "sell"; renderTradeSide(); };
+document.getElementById("t-quote").onclick = tradeQuote;
+document.getElementById("t-exec").onclick = tradeExec;
 document.querySelectorAll(".tab").forEach(t => t.onclick = () => switchTab(t.dataset.tab));
 document.querySelectorAll("#tok-grid th[data-sort]").forEach(th => th.onclick = () => {
   if (STATE.sortTok === th.dataset.sort) STATE.dirTok *= -1;
@@ -576,5 +695,6 @@ document.getElementById("flow").onchange = e => { STATE.flow = e.target.value; r
 document.getElementById("memes").onchange = e => { STATE.memes = e.target.checked; load(false); };
 document.addEventListener("keydown", e => { if (e.key === "Escape") document.getElementById("overlay").classList.add("hidden"); });
 
+loadTradeStatus();
 load(false);
 setInterval(() => load(false), 300000);

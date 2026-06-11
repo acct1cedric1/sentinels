@@ -282,6 +282,45 @@ tbody tr:hover td:first-child{box-shadow:inset 2px 0 0 var(--green)}
 .wallet-empty a{color:var(--green)}
 .wmodal-msg{color:var(--amber);font-size:11px;margin:14px 22px 0;min-height:16px}
 
+/* ---- in-app trading ---- */
+.vel{display:block;font-size:9px;color:var(--green);letter-spacing:.3px;margin-top:1px}
+.tok-link{text-decoration:none;color:inherit}
+.tok-link:hover .nm{color:var(--green)}
+.ext-mini{font-size:9px;color:var(--muted)}
+.t-open{background:transparent;border:1px solid var(--green);color:var(--green);font-family:inherit;
+  font-size:10px;font-weight:700;letter-spacing:1px;padding:4px 9px;cursor:pointer;border-radius:0;
+  display:inline-block;margin:0 0 4px}
+.t-open:hover{background:var(--green);color:#04130a}
+.t-body{padding:14px 22px 4px}
+.t-side{display:flex;gap:0;margin-bottom:14px}
+.t-sidebtn{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--muted);
+  font-family:inherit;font-weight:700;font-size:12px;letter-spacing:2px;padding:10px;cursor:pointer;border-radius:0}
+.t-sidebtn.active{background:var(--green);color:#04130a;border-color:var(--green)}
+#t-sell.active{background:var(--sell);border-color:var(--sell);color:#fff}
+.t-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.t-lbl{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.t-amt{background:var(--panel);border:1px solid var(--line);color:var(--text);font-family:inherit;
+  font-size:11px;padding:7px 10px;cursor:pointer;border-radius:0}
+.t-amt.active{border-color:var(--green);color:var(--green)}
+#t-custom{width:90px;background:var(--bg);border:1px solid var(--line);color:var(--text);
+  font-family:inherit;font-size:11px;padding:7px 9px;outline:none;border-radius:0}
+#t-custom:focus{border-color:var(--green)}
+.t-slip select{background:var(--panel);border:1px solid var(--line);color:var(--text);
+  font-family:inherit;font-size:11px;padding:7px 9px;border-radius:0;outline:none}
+.t-quotebtn{margin-left:auto;background:transparent;border:1px solid var(--line2);color:var(--text);
+  font-family:inherit;font-size:11px;font-weight:700;letter-spacing:1px;padding:7px 13px;cursor:pointer;border-radius:0}
+.t-quotebtn:hover{border-color:var(--green);color:var(--green)}
+.t-preview{font-size:12px;line-height:1.9;min-height:20px;margin-bottom:12px;color:var(--text)}
+.t-execbtn{width:100%;background:var(--green);border:1px solid var(--green);color:#04130a;
+  font-family:inherit;font-weight:700;font-size:12px;letter-spacing:2px;padding:12px;cursor:pointer;border-radius:0}
+.t-execbtn:disabled{background:transparent;color:var(--muted);border-color:var(--line);cursor:not-allowed}
+.t-execbtn:not(:disabled):hover{filter:brightness(1.1)}
+.t-msg{font-size:11px;color:var(--muted);margin:10px 0 4px;min-height:14px}
+.t-msg.err{color:var(--sell)}
+.t-msg.ok{color:var(--green)}
+.t-note{font-size:9px;color:var(--muted);line-height:1.6;border-top:1px solid var(--line);
+  padding:10px 0 12px;margin-top:8px;letter-spacing:.3px}
+
 /* ---- community chat ---- */
 .chat-toggle{margin-left:6px;align-self:center;background:transparent;border:1px solid var(--line2);
   color:var(--green);font-family:inherit;font-size:11px;font-weight:600;letter-spacing:1px;

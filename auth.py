@@ -180,7 +180,15 @@ _DEFAULT_GATING = {
     "min_usd": 5,           # hold >= this USD of token_mint to unlock
     "admin_wallets": [],    # always-premium pubkeys (e.g. you)
     "pumpfun_mcap_target": 100000,   # project mcap that auto-releases the Pump.fun radar
+    "trading_unlocked": False,       # manual release switch for in-app trading
 }
+
+_B58_CHARS = set(_B58)
+
+
+def _B58_OK(s):
+    """True iff `s` looks like a Solana address (base58, 32-44 chars)."""
+    return bool(s) and 32 <= len(s) <= 44 and all(c in _B58_CHARS for c in s)
 
 
 def gating():
