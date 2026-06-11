@@ -471,20 +471,37 @@ function tradeBtn(mint, symbol) {
     onclick="event.stopPropagation();openTrade(this.dataset.mint,this.dataset.sym)">⚡ TRADE</button>`;
 }
 
-const T = { mint: null, sym: "", side: "buy", amount: 0.1, pct: 50, quoting: false };
+const T = { mint: null, sym: "", side: "buy", amount: 0.1, pct: 50, ok: false };
+let _quoteTimer = null, _quoteInterval = null, _quoteSeq = 0;
+
+function tmodalOpen() { return !document.getElementById("tmodal").classList.contains("hidden"); }
 
 function openTrade(mint, sym) {
   if (!window.SMwallet || !window.SMwallet.getAccount()) {
     if (window.SMwallet) window.SMwallet.open();
     return;
   }
-  T.mint = mint; T.sym = sym; T.side = "buy";
+  T.mint = mint; T.sym = sym; T.side = "buy"; T.amount = 0.1; T.pct = 50; T.ok = false;
   document.getElementById("tmodalTitle").textContent = `Trade ${sym}`;
   document.getElementById("t-preview").innerHTML = "";
-  document.getElementById("t-msg").textContent = "";
+  document.getElementById("t-msg").textContent = ""; document.getElementById("t-msg").className = "t-msg";
   document.getElementById("t-exec").disabled = true;
-  renderTradeSide();
   document.getElementById("tmodal").classList.remove("hidden");
+  renderTradeSide();                       // triggers the first auto-quote
+  clearInterval(_quoteInterval);
+  _quoteInterval = setInterval(() => { if (tmodalOpen()) tradeQuote(); }, 10000);  // keep it fresh
+}
+
+function closeTrade() {
+  document.getElementById("tmodal").classList.add("hidden");
+  clearInterval(_quoteInterval); clearTimeout(_quoteTimer);
+}
+
+function scheduleQuote(delay = 250) {
+  clearTimeout(_quoteTimer);
+  const live = document.getElementById("t-live");
+  if (live) { live.textContent = "quoting…"; live.className = "t-live on"; }
+  _quoteTimer = setTimeout(tradeQuote, delay);
 }
 
 function renderTradeSide() {
@@ -507,12 +524,11 @@ function renderTradeSide() {
     renderTradeSide();
   });
   const c = document.getElementById("t-custom");
-  if (c) c.oninput = () => { const v = parseFloat(c.value); if (v > 0) T.amount = v; };
-  document.getElementById("t-preview").innerHTML = "";
-  document.getElementById("t-exec").disabled = true;
+  if (c) c.oninput = () => { const v = parseFloat(c.value); if (v > 0) { T.amount = v; scheduleQuote(500); } };
+  scheduleQuote(250);                      // auto-quote on every input change
 }
 
-function tradeBody(execute) {
+function tradeBody() {
   const body = { side: T.side, mint: T.mint,
     slippage_bps: +document.getElementById("t-slippage").value };
   if (T.side === "buy") body.sol_amount = T.amount; else body.pct = T.pct;
@@ -520,12 +536,21 @@ function tradeBody(execute) {
 }
 
 async function tradeQuote() {
+  if (!tmodalOpen() || !T.mint) return;
   const msg = document.getElementById("t-msg"), pv = document.getElementById("t-preview");
-  msg.textContent = "fetching route…"; msg.className = "t-msg";
+  const live = document.getElementById("t-live");
+  const seq = ++_quoteSeq;
   try {
     const d = await (await fetch("/api/trade/quote", { method: "POST",
-      headers: { "Content-Type": "application/json" }, body: JSON.stringify(tradeBody(false)) })).json();
-    if (d.error) { msg.textContent = d.reason || d.error; msg.className = "t-msg err"; return; }
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify(tradeBody()) })).json();
+    if (seq !== _quoteSeq) return;         // a newer quote superseded this one
+    if (d.error) {
+      msg.textContent = d.reason || d.error; msg.className = "t-msg err";
+      pv.innerHTML = ""; T.ok = false;
+      document.getElementById("t-exec").disabled = true;
+      if (live) { live.textContent = "no route"; live.className = "t-live"; }
+      return;
+    }
     const s = d.summary;
     pv.innerHTML = T.side === "buy"
       ? `<div>› You pay <b>${s.in}</b></div>
@@ -534,9 +559,13 @@ async function tradeQuote() {
       : `<div>› You sell <b>${s.in_ui != null ? s.in_ui.toLocaleString(undefined,{maximumFractionDigits:0}) : "?"} ${esc(T.sym)}</b> (${s.pct}%)</div>
          <div>› You receive ≈ <b class="up">${(s.out_sol ?? 0).toFixed(4)} SOL</b></div>
          <div class="muted">price impact ${s.price_impact_pct ?? "?"}% · slippage ${(s.slippage_bps/100)}%</div>`;
-    msg.textContent = "";
+    msg.textContent = ""; msg.className = "t-msg"; T.ok = true;
     document.getElementById("t-exec").disabled = false;
-  } catch (e) { msg.textContent = "quote failed — retry"; msg.className = "t-msg err"; }
+    if (live) { live.textContent = "● live · auto-updates"; live.className = "t-live ok"; }
+  } catch (e) {
+    if (seq !== _quoteSeq) return;
+    if (live) { live.textContent = "retry…"; live.className = "t-live"; }
+  }
 }
 
 async function tradeExec() {
@@ -630,19 +659,28 @@ function switchTab(name) {
   if (name === "pumpfun") loadPumpfun();
   else render();
 }
-document.getElementById("pf-smart").onchange = e => { STATE.pf.smart = e.target.checked; loadPumpfun(); };
-document.getElementById("pf-status").onchange = e => {
-  STATE.pf.view = e.target.value;
-  const smart = document.getElementById("pf-smart");
-  smart.disabled = STATE.pf.view !== "new";          // cross-ref only works on fresh curves
-  if (smart.disabled) { smart.checked = false; STATE.pf.smart = false; }
+document.getElementById("pf-smart").onchange = e => {
+  STATE.pf.smart = e.target.checked;
+  // smart cross-reference only runs on the fresh-launch view — switch to it if needed
+  if (STATE.pf.smart && STATE.pf.view !== "new") {
+    STATE.pf.view = "new";
+    document.getElementById("pf-status").value = "new";
+  }
   loadPumpfun();
 };
-document.getElementById("tmodalClose").onclick = () => document.getElementById("tmodal").classList.add("hidden");
-document.getElementById("tmodal").onclick = e => { if (e.target.id === "tmodal") e.currentTarget.classList.add("hidden"); };
+document.getElementById("pf-status").onchange = e => {
+  STATE.pf.view = e.target.value;
+  if (STATE.pf.view !== "new" && STATE.pf.smart) {     // smart filter is new-view only
+    STATE.pf.smart = false;
+    document.getElementById("pf-smart").checked = false;
+  }
+  loadPumpfun();
+};
+document.getElementById("tmodalClose").onclick = closeTrade;
+document.getElementById("tmodal").onclick = e => { if (e.target.id === "tmodal") closeTrade(); };
 document.getElementById("t-buy").onclick = () => { T.side = "buy"; renderTradeSide(); };
 document.getElementById("t-sell").onclick = () => { T.side = "sell"; renderTradeSide(); };
-document.getElementById("t-quote").onclick = tradeQuote;
+document.getElementById("t-slippage").onchange = () => scheduleQuote(0);
 document.getElementById("t-exec").onclick = tradeExec;
 document.querySelectorAll(".tab").forEach(t => t.onclick = () => switchTab(t.dataset.tab));
 document.querySelectorAll("#tok-grid th[data-sort]").forEach(th => th.onclick = () => {

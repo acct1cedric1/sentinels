@@ -307,9 +307,9 @@ tbody tr:hover td:first-child{box-shadow:inset 2px 0 0 var(--green)}
 #t-custom:focus{border-color:var(--green)}
 .t-slip select{background:var(--panel);border:1px solid var(--line);color:var(--text);
   font-family:inherit;font-size:11px;padding:7px 9px;border-radius:0;outline:none}
-.t-quotebtn{margin-left:auto;background:transparent;border:1px solid var(--line2);color:var(--text);
-  font-family:inherit;font-size:11px;font-weight:700;letter-spacing:1px;padding:7px 13px;cursor:pointer;border-radius:0}
-.t-quotebtn:hover{border-color:var(--green);color:var(--green)}
+.t-live{margin-left:auto;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.t-live.on{color:var(--amber)}
+.t-live.ok{color:var(--green)}
 .t-preview{font-size:12px;line-height:1.9;min-height:20px;margin-bottom:12px;color:var(--text)}
 .t-execbtn{width:100%;background:var(--green);border:1px solid var(--green);color:#04130a;
   font-family:inherit;font-weight:700;font-size:12px;letter-spacing:2px;padding:12px;cursor:pointer;border-radius:0}
