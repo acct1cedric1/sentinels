@@ -4,8 +4,8 @@ Community chatroom backend for Sentinels.
 - Wallet-authenticated posting (the server passes the verified pubkey).
 - Moderation in two layers:
     1. a fast banned-keyword / leetspeak filter (always on), and
-    2. optional Claude AI moderation (activated when `anthropic_api_key` is set in
-       config.json or the ANTHROPIC_API_KEY env var) to catch obfuscated slurs,
+    2. an optional AI moderation layer (activated by the `moderation` block in
+       config.json — a configurable LLM endpoint) to catch obfuscated slurs,
        harassment, scam-shilling and coordinated FUD that keyword lists miss.
 - Per-wallet rate limiting + a rolling in-memory log persisted to chat_log.json.
 
@@ -32,7 +32,6 @@ CONFIG = os.path.join(HERE, "config.json")
 MAX_KEEP = 300
 MAX_LEN = 300
 RATE_SECONDS = 3
-MOD_MODEL = os.environ.get("SM_MOD_MODEL", "claude-haiku-4-5-20251001")
 
 # Banned keywords (whole-word, case- & leetspeak-insensitive). Includes the explicit
 # project blocklist plus common slurs/abuse. The AI layer catches the rest.
@@ -72,15 +71,22 @@ def _save():
 _load()
 
 
-def _anthropic_key():
-    k = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-    if k:
-        return k
+def _mod_cfg():
+    """Optional AI moderation provider, fully config-driven (no provider hardcoded).
+    Reads the `moderation` block from config.json: {api_key, url, model, headers}.
+    Returns {} when not configured -> AI layer stays off (keyword filter still runs)."""
+    cfg = {}
     try:
         with open(CONFIG, "r", encoding="utf-8") as f:
-            return (json.load(f).get("anthropic_api_key") or "").strip()
+            cfg = json.load(f).get("moderation") or {}
     except Exception:
-        return ""
+        cfg = {}
+    key = os.environ.get("SM_MOD_KEY", "").strip() or (cfg.get("api_key") or "").strip()
+    url = (cfg.get("url") or "").strip()
+    model = (cfg.get("model") or "").strip()
+    if not (key and url and model) or _S is None:
+        return {}
+    return {"key": key, "url": url, "model": model, "headers": cfg.get("headers") or {}}
 
 
 def _despace_singletons(text):
@@ -124,15 +130,15 @@ _MOD_SYSTEM = (
 
 
 def ai_moderate(text):
-    """Return (block: bool, reason). No-op (False) when no key/library/usable response."""
-    key = _anthropic_key()
-    if not key or _S is None:
+    """Return (block: bool, reason). No-op (False) when the provider isn't configured."""
+    c = _mod_cfg()
+    if not c:
         return False, None
     try:
-        r = _S.post("https://api.anthropic.com/v1/messages",
-                    headers={"x-api-key": key, "anthropic-version": "2023-06-01",
-                             "content-type": "application/json"},
-                    json={"model": MOD_MODEL, "max_tokens": 60,
+        headers = {"x-api-key": c["key"], "content-type": "application/json"}
+        headers.update(c["headers"])            # any provider-specific headers live in config
+        r = _S.post(c["url"], headers=headers,
+                    json={"model": c["model"], "max_tokens": 60,
                           "system": _MOD_SYSTEM,
                           "messages": [{"role": "user", "content": text[:500]}]},
                     timeout=8)
@@ -182,4 +188,4 @@ def recent(after=0, limit=80):
 
 
 def ai_enabled():
-    return bool(_anthropic_key()) and _S is not None
+    return bool(_mod_cfg())

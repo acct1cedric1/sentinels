@@ -41,7 +41,7 @@ catches on. No bought labels, no black box: every signal is computed live from t
 | **Helius** | Parses Solana **swaps** into per-wallet buy/sell; DAS holdings & balances. | Free dev key |
 | **GeckoTerminal** | Token/pool discovery across **every** Solana DEX, prices, market caps, OHLCV, token lookup. | **No key** |
 | **pump.fun** | Newest launches incl. pre-bond tokens, for the Launch Radar. | **No key** |
-| **Anthropic** *(optional)* | AI moderation for community chat. | Optional key |
+| **AI moderation** *(optional)* | Configurable LLM endpoint for community-chat moderation (bring your own). | Optional key |
 
 ## How "smart money" is defined
 

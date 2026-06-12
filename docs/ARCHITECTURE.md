@@ -12,7 +12,7 @@ and all market intelligence is computed live from public on-chain data.
 | **Helius** | Parses Solana transactions into clean swaps (who traded, which tokens, how much); DAS holdings & balances. | API key |
 | **GeckoTerminal** | Token/pool discovery across **every** Solana DEX, prices, market caps, OHLCV, arbitrary token lookup. | none |
 | **pump.fun** | Newest launches incl. pre-bond tokens, for the Launch Radar. | none |
-| **Anthropic (optional)** | AI moderation layer for the community chat. | API key (optional) |
+| **AI moderation (optional)** | Configurable LLM endpoint for community-chat moderation. | API key (optional) |
 
 ## The core loop — "base scan, then derive"
 

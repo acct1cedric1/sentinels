@@ -12,7 +12,7 @@ sentinels/
 ├─ market.py      # GeckoTerminal client (trending/top pools, prices, token lookup)
 ├─ pumpfun.py     # pump.fun launch feed + smart-buyer cross-reference
 ├─ auth.py        # wallet sign-in (ed25519), sessions, token-gating
-├─ chat.py        # community chat + moderation (keyword + optional Claude AI)
+├─ chat.py        # community chat + moderation (keyword + optional AI layer)
 └─ static/        # frontend (vanilla HTML/CSS/JS, no build step)
 ```
 
