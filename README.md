@@ -16,9 +16,17 @@
 
 ---
 
-Sentinels discovers the most active wallets on Solana straight from on-chain swaps, scores every
-one of them by **realized win rate**, and shows you what they're accumulating — before the crowd
-catches on. No bought labels, no black box: every signal is computed live from the chain.
+Every smart-money tracker sells you the same thing: a list of wallet labels you can't audit.
+**Sentinels has no list.** Every 5 minutes it rebuilds the smart-money cohort from **raw on-chain
+swaps** — scans the chain's most active pools, parses who bought and sold what, scores every wallet
+by its **realized win rate** — and shows you what the winners are accumulating before the crowd
+catches on. No bought labels, no black box: every signal is recomputed live, from data anyone can
+verify on any explorer.
+
+And it's deliberately small enough to audit: **~4,100 lines** of pure-Python stdlib + vanilla JS.
+One process, no database, no framework, no build step, no paid data — free public APIs (only
+Helius needs a key, and that's free too) and a double-click. Read every line that produces every
+number on your screen.
 
 > **Educational analytics, not financial advice.** "Smart money" here is a transparent on-chain
 > heuristic (high-volume, high-win-rate active traders), not a vetted track record — it can include

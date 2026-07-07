@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SENTINELS_ — Follow the wallets that win</title>
+<meta name="description" content="Smart money you can verify. Sentinels has no wallet list — it rebuilds the smart-money cohort from raw Solana swaps every 5 minutes, scores every wallet by realized win rate, and shows you what the winners are buying.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SENTINELS">
+<meta property="og:title" content="SENTINELS — Follow the Solana wallets that actually win">
+<meta property="og:description" content="No bought labels. No black box. The smart-money cohort is recomputed live from raw on-chain swaps — every wallet scored by its real win rate.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="SENTINELS — Follow the Solana wallets that actually win">
+<meta name="twitter:description" content="Smart money, discovered live from raw Solana swaps — never bought. Every wallet scored by realized win rate.">
+<meta name="theme-color" content="#060907">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -89,6 +98,49 @@ a{color:var(--green)}
 .stat b{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
 .stat b em{font-style:normal;color:var(--green)}
 
+.intel{border:1px solid var(--line2);background:var(--bg2);margin-top:44px;
+  box-shadow:6px 6px 0 0 rgba(43,255,136,.10)}
+.intel-head{padding:9px 18px;font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);border-bottom:1px solid var(--line)}
+.intel-head b{color:var(--green);font-weight:600}
+.intel-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.intel-cell{padding:18px 20px;border-right:1px solid var(--line)}
+.intel-cell:last-child{border-right:none}
+.intel-cell > span{display:block;color:var(--muted);font-size:9px;letter-spacing:1.8px;
+  text-transform:uppercase;margin-bottom:9px}
+.intel-cell > span::before{content:"› "}
+.intel-cell b{font-size:17px;font-weight:700;display:block;word-break:break-word}
+.intel-sub{margin-top:7px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.intel-sub em{font-style:normal;color:var(--green)}
+.intel-sub .neg{color:var(--sell)}
+.lockchip{display:inline-block;font-size:8px;font-weight:700;letter-spacing:1px;
+  border:1px solid var(--amber);color:var(--amber);padding:2px 6px;margin-top:8px;
+  text-transform:uppercase;animation:pulse 2.4s infinite}
+.lockchip[hidden]{display:none}
+@media(max-width:600px){.intel-cell{border-right:none;border-bottom:1px solid var(--line)}
+  .intel-cell:last-child{border-bottom:none}}
+
+.term{border:1px solid var(--line2);background:#04130a;padding:0 0 18px;
+  box-shadow:6px 6px 0 0 rgba(43,255,136,.10)}
+.term-title{padding:9px 18px;border-bottom:1px solid var(--line);color:var(--muted);
+  font-size:11px;letter-spacing:1px}
+.term-title::before{content:"$ ";color:var(--green)}
+.tline{padding:12px 18px 0;font-size:12.5px;line-height:1.75;color:var(--text)}
+.tline i{font-style:normal;color:var(--muted)}
+.tline b{color:var(--green);font-weight:700;letter-spacing:1px;margin:0 8px}
+.tline.ok{color:var(--green);margin-top:6px}
+.receipts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0;
+  border:1px solid var(--line);border-top:none}
+.receipt{background:var(--bg2);border-right:1px solid var(--line);padding:22px}
+.receipt:last-child{border-right:none}
+.receipt h3{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:var(--green);margin-bottom:10px}
+.receipt h3::before{content:"✓ "}
+.receipt p{color:var(--muted);font-size:12px;line-height:1.8}
+.receipt p b{color:var(--text);font-weight:600}
+@media(max-width:600px){.receipt{border-right:none;border-bottom:1px solid var(--line)}
+  .receipt:last-child{border-bottom:none}}
+
 section{max-width:1020px;margin:0 auto;padding:60px 24px}
 h2{font-size:20px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
 h2::before{content:"// ";color:var(--green)}
@@ -153,6 +205,7 @@ footer::before{content:"// DISCLAIMER";display:block;color:var(--line2);letter-s
   <span class="brand">SENTINELS<i>_</i></span>
   <nav>
     <a href="#features">Modules</a>
+    <a href="#built">How it works</a>
     <a href="#roadmap">Roadmap</a>
     <a href="#faq">FAQ</a>
     <a id="gh-link" class="gh-link soon" href="#" rel="noopener" title="Source code reveal coming soon">
@@ -164,11 +217,12 @@ footer::before{content:"// DISCLAIMER";display:block;color:var(--line2);letter-s
 </header>
 
 <div class="hero">
-  <div class="pre">tracking solana smart money — live</div>
+  <div class="pre">solana smart money — discovered live, never bought</div>
   <h1>Follow the wallets<br>that <b>actually win</b><span class="cur">▮</span></h1>
-  <p>Real-time money flow across <b>the entire actively-traded Solana universe</b>. We discover the
-     most active wallets straight from on-chain swaps, score every one by <b>realized win rate</b>,
-     and show you what they're accumulating — before the crowd catches on.</p>
+  <p>Every tracker sells you a list of "smart money" wallets you can't audit. <b>Sentinels has no
+     list.</b> Every 5 minutes it rebuilds the cohort from <b>raw on-chain swaps</b>, scores each
+     wallet by <b>realized win rate</b>, and shows you what the winners are accumulating — while
+     it's still early.</p>
   <div class="btnrow">
     <a class="cta" href="/app">Launch Terminal</a>
     <a class="cta ghost" href="#roadmap">View Roadmap</a>
@@ -176,6 +230,27 @@ footer::before{content:"// DISCLAIMER";display:block;color:var(--line2);letter-s
       <span class="ca-lbl">Official contract address:</span>
       <code class="ca-val" id="ca-val">TBA — launching soon</code>
       <button class="ca-copy" id="ca-copy" hidden>copy</button>
+    </div>
+  </div>
+  <div class="intel">
+    <div class="intel-head">// live from the chain — <b id="in-upd">first scan syncing…</b></div>
+    <div class="intel-row">
+      <div class="intel-cell">
+        <span>#1 ranked wallet right now</span>
+        <b id="in-wallet">scanning swaps…</b>
+        <div class="intel-sub" id="in-wallet-sub"></div>
+        <div class="lockchip" id="in-lock" hidden>identity locked — hold to reveal</div>
+      </div>
+      <div class="intel-cell">
+        <span>heaviest accumulation</span>
+        <b id="in-token">scanning swaps…</b>
+        <div class="intel-sub" id="in-token-sub"></div>
+      </div>
+      <div class="intel-cell">
+        <span>smart net flow · board total</span>
+        <b id="in-net">—</b>
+        <div class="intel-sub" id="in-net-sub"></div>
+      </div>
     </div>
   </div>
   <div class="stats">
@@ -203,6 +278,33 @@ footer::before{content:"// DISCLAIMER";display:block;color:var(--line2);letter-s
     <h3>⚠ Next unlock — pump.fun launch radar</h3>
     <div class="bar"><i id="mile-bar"></i></div>
     <div class="bar-lbl" id="mile-lbl">Loading milestone…</div>
+  </div>
+</section>
+
+<section id="built">
+  <h2>How it's built</h2>
+  <p class="sub">Every other tracker starts from a database of wallet labels you have to trust.
+     Sentinels starts from nothing — and rebuilds the smart-money cohort from raw chain data,
+     every cycle, in front of you.</p>
+  <div class="term">
+    <div class="term-title">sentinels --explain</div>
+    <div class="tline"><i>[1/4]</i><b>DISCOVER</b>scan the chain's most active pools — ranked by real volume, not curated by anyone</div>
+    <div class="tline"><i>[2/4]</i><b>PARSE</b>read every recent swap raw from Solana: who bought, who sold, for how much</div>
+    <div class="tline"><i>[3/4]</i><b>SCORE</b>compute each wallet's realized win rate from its own trade history — average-cost basis, closed trades only</div>
+    <div class="tline"><i>[4/4]</i><b>RANK</b>the wallets that keep winning ARE the smart money — recomputed live, every 5 minutes</div>
+    <div class="tline ok">✓ no label database · no hand-picked wallets · nothing taken on faith</div>
+  </div>
+  <div class="receipts">
+    <div class="receipt"><h3>Nothing to fake</h3>
+      <p>If we curated the wallet list, you couldn't verify it. So there is no list — the cohort is
+         recomputed from <b>public swaps anyone can check</b> on any explorer.</p></div>
+    <div class="receipt"><h3>Locked means locked</h3>
+      <p>Premium isn't a blur filter. Gated wallet addresses <b>never leave the server</b> —
+         open devtools and inspect the API response yourself.</p></div>
+    <div class="receipt"><h3>A roadmap that executes itself</h3>
+      <p>Features don't unlock when we feel like it. The app <b>checks our market cap on-chain</b>
+         and releases each unlock itself — the $100K radar release and trading-at-bond are already
+         wired in. No promises. Just code.</p></div>
   </div>
 </section>
 
@@ -335,6 +437,32 @@ setInterval(() => {
     const d = await (await fetch("/api/smartmoney?tf=24h")).json();
     if (d.token_count) document.getElementById("st-tokens").textContent = d.token_count;
     if (d.wallet_count) document.getElementById("st-wallets").textContent = d.wallet_count;
+    const usd = v => { const a = Math.abs(v || 0), s = v < 0 ? "-$" : "$";
+      return s + (a >= 1e6 ? (a/1e6).toFixed(2) + "M" : a >= 1e3 ? (a/1e3).toFixed(1) + "K" : a.toFixed(0)); };
+    const set = (id, txt) => { document.getElementById(id).textContent = txt; };
+    if (d.updated && d.updated !== "—") set("in-upd", d.updated);
+    const w = (d.wallets || [])[0];
+    if (w) {
+      set("in-wallet", w.alias || "—");
+      document.getElementById("in-wallet-sub").innerHTML =
+        (w.winrate != null ? `<em>${w.winrate}% win rate</em> · ` : "") +
+        `${w.trades || 0} trades · ${usd(w.volume_usd)} volume`;
+      if (w.gated) document.getElementById("in-lock").hidden = false;
+    }
+    const toks = (d.tokens || []).slice();
+    if (toks.length) {
+      const top = toks.reduce((a, b) => (b.smart_net_usd || 0) > (a.smart_net_usd || 0) ? b : a);
+      const tn = top.smart_net_usd || 0;
+      set("in-token", "$" + (top.symbol || "?"));
+      document.getElementById("in-token-sub").innerHTML =
+        `<em>${tn > 0 ? "+" : ""}${usd(tn)} net</em> · ${top.smart_wallets || 0} smart wallets in`;
+      const net = toks.reduce((s, t) => s + (t.smart_net_usd || 0), 0);
+      set("in-net", usd(net));
+      document.getElementById("in-net-sub").innerHTML = net >= 0
+        ? `smart money is <em>net buying</em> right now`
+        : `smart money is <span class="neg">net selling</span> right now`;
+      document.getElementById("in-net").style.color = net >= 0 ? "var(--green)" : "var(--sell)";
+    }
   } catch (e) {}
   try {
     const s = await (await fetch("/api/site")).json();
