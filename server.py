@@ -852,6 +852,14 @@ class Handler(BaseHTTPRequestHandler):
                 tf = q.get("tf", "24h")
                 memes = q.get("memecoins", "0") == "1"
                 force = q.get("force") == "1" and self._can_force_refresh()
+                with _WARMUP_LOCK:
+                    warming = _WARMUP["running"]
+                with _BASE_LOCK:
+                    base_cached = _BASE["data"] is not None
+                if warming and not base_cached and not force:
+                    self._send(200, gate_view(_err_payload("warming_up", tf, memes),
+                                              self._premium()))
+                    return
                 full = build_smart_money(tf, memes, force=force)
                 self._send(200, gate_view(full, self._premium()))
                 return

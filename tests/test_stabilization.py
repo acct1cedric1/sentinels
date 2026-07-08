@@ -125,6 +125,24 @@ class ServerStabilizationTests(unittest.TestCase):
         self.assertEqual(body["error"], "no_api_key")
         self.assertEqual(body["tokens"], [])
 
+    def test_smartmoney_returns_fast_warming_payload(self):
+        old_key = server.helius.API_KEY
+        old_warm = dict(server._WARMUP)
+        old_base = dict(server._BASE)
+        server.helius.API_KEY = "test-key"
+        server._WARMUP.update({"running": True, "last_error": None, "last_ok": None})
+        server._BASE.update({"ts": 0, "data": None})
+        try:
+            status, body, _ = self.get_json("/api/smartmoney?tf=24h&memecoins=0")
+        finally:
+            server.helius.API_KEY = old_key
+            server._WARMUP.update(old_warm)
+            server._BASE.update(old_base)
+
+        self.assertEqual(status, 200)
+        self.assertEqual(body["error"], "warming_up")
+        self.assertEqual(body["tokens"], [])
+
     def test_wallet_detail_rejects_invalid_address_before_api_calls(self):
         status, body, _ = self.get_json("/api/wallet?address=not-a-wallet")
 
