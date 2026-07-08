@@ -72,7 +72,7 @@ class ServerBehaviorTests(unittest.TestCase):
         self.assertEqual(headers.get("X-Content-Type-Options"), "nosniff")
         self.assertEqual(json.loads(data.decode("utf-8")), {"error": "not found"})
 
-    def test_main_binds_server_before_starting_warmup(self):
+    def test_main_binds_server_before_starting_keyed_warmup(self):
         events = []
 
         class FakeHTTPServer:
@@ -94,7 +94,7 @@ class ServerBehaviorTests(unittest.TestCase):
                 events.append("thread_start")
 
         with mock.patch.object(server, "ThreadingHTTPServer", FakeHTTPServer), \
-                mock.patch.object(server.helius, "has_key", return_value=False), \
+                mock.patch.object(server.helius, "has_key", return_value=True), \
                 mock.patch.object(server.threading, "Thread", FakeThread), \
                 mock.patch("builtins.print"):
             server.main()

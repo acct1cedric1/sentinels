@@ -1003,7 +1003,7 @@ def main():
     srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
     if helius.has_key():
         print("  Helius key loaded. Warming up in the background (trending + swap parsing)...")
-    threading.Thread(target=_warmup_background, daemon=True).start()
+        threading.Thread(target=_warmup_background, daemon=True).start()
     print(f"\n  Open  ->  http://localhost:{PORT}\n  Ctrl+C to stop.\n")
     try:
         srv.serve_forever()
