@@ -191,6 +191,45 @@ def _B58_OK(s):
     return bool(s) and 32 <= len(s) <= 44 and all(c in _B58_CHARS for c in s)
 
 
+def _coerce_bool(value, default):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "yes", "on"}:
+            return True
+        if normalized in {"0", "false", "no", "off"}:
+            return False
+    if isinstance(value, (int, float)) and value in (0, 1):
+        return bool(value)
+    return default
+
+
+def _coerce_number(value, default):
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, (int, float)):
+        number = value
+    elif isinstance(value, str):
+        try:
+            number = float(value.strip())
+        except ValueError:
+            return default
+    else:
+        return default
+    if not isinstance(number, (int, float)) or number != number or number in (float("inf"), float("-inf")):
+        return default
+    if isinstance(value, str) and number.is_integer():
+        return int(number)
+    return number
+
+
+def _coerce_admin_wallets(value):
+    if not isinstance(value, (list, tuple, set)):
+        return set()
+    return {wallet for wallet in value if isinstance(wallet, str) and _B58_OK(wallet)}
+
+
 def gating():
     g = dict(_DEFAULT_GATING)
     try:
@@ -200,7 +239,14 @@ def gating():
             g[k] = v
     except Exception:
         pass
-    g["admin_wallets"] = set(g.get("admin_wallets") or [])
+    g["enabled"] = _coerce_bool(g.get("enabled"), _DEFAULT_GATING["enabled"])
+    g["trading_unlocked"] = _coerce_bool(g.get("trading_unlocked"), _DEFAULT_GATING["trading_unlocked"])
+    g["lock_winrate"] = _coerce_number(g.get("lock_winrate"), _DEFAULT_GATING["lock_winrate"])
+    g["min_usd"] = _coerce_number(g.get("min_usd"), _DEFAULT_GATING["min_usd"])
+    g["pumpfun_mcap_target"] = _coerce_number(
+        g.get("pumpfun_mcap_target"), _DEFAULT_GATING["pumpfun_mcap_target"]
+    )
+    g["admin_wallets"] = _coerce_admin_wallets(g.get("admin_wallets"))
     return g
 
 

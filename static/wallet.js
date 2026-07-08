@@ -28,6 +28,23 @@ function solanaWallets() {
 
 function refresh() { WALLETS = solanaWallets(); renderWalletList(); }
 
+function walletName(wallet) {
+  const name = typeof wallet?.name === "string" ? wallet.name.trim() : "";
+  return name.slice(0, 80) || "Solana wallet";
+}
+
+function walletIconUrl(icon) {
+  if (typeof icon !== "string") return "";
+  const value = icon.trim();
+  if (!value || value.length > 100000) return "";
+  if (/^data:image\/(?:png|jpe?g|gif|webp|svg\+xml);base64,[a-z0-9+/=]+$/i.test(value)) return value;
+  try {
+    const url = new URL(value, window.location.href);
+    if (url.protocol === "https:") return url.href;
+  } catch (e) {}
+  return "";
+}
+
 function renderWalletList() {
   const el = $("walletList");
   if (!el) return;
@@ -38,14 +55,33 @@ function renderWalletList() {
       <a href="https://backpack.app" target="_blank">Backpack</a>, then reopen this dialog.</div>`;
     return;
   }
-  el.innerHTML = WALLETS.map((w, i) =>
-    `<button class="wallet-btn" data-i="${i}">
-       <img src="${w.icon}" alt="" onerror="this.style.visibility='hidden'">
-       <span class="wallet-name">${w.name}</span>
-       <span class="wallet-go">Sign in</span>
-     </button>`).join("");
-  el.querySelectorAll(".wallet-btn").forEach((b) =>
-    (b.onclick = () => login(WALLETS[+b.dataset.i])));
+  const frag = document.createDocumentFragment();
+  WALLETS.forEach((w, i) => {
+    const btn = document.createElement("button");
+    btn.className = "wallet-btn";
+    btn.type = "button";
+    btn.dataset.i = String(i);
+    btn.onclick = () => login(WALLETS[i]);
+
+    const img = document.createElement("img");
+    img.alt = "";
+    img.onerror = () => { img.style.visibility = "hidden"; };
+    const icon = walletIconUrl(w?.icon);
+    if (icon) img.src = icon;
+    else img.style.visibility = "hidden";
+
+    const name = document.createElement("span");
+    name.className = "wallet-name";
+    name.textContent = walletName(w);
+
+    const go = document.createElement("span");
+    go.className = "wallet-go";
+    go.textContent = "Sign in";
+
+    btn.append(img, name, go);
+    frag.append(btn);
+  });
+  el.replaceChildren(frag);
 }
 
 let CONNECTED = { wallet: null, account: null };   // kept for in-app trading

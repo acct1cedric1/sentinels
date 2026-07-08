@@ -733,6 +733,8 @@ document.getElementById("flow").onchange = e => { STATE.flow = e.target.value; r
 document.getElementById("memes").onchange = e => { STATE.memes = e.target.checked; load(false); };
 document.addEventListener("keydown", e => { if (e.key === "Escape") document.getElementById("overlay").classList.add("hidden"); });
 
-loadTradeStatus();
-load(false);
+(async () => {
+  await loadTradeStatus();
+  await load(false);
+})();
 setInterval(() => load(false), 300000);

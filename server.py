@@ -56,6 +56,7 @@ WORKERS = int(os.environ.get("SM_WORKERS", "4"))
 TTL = int(os.environ.get("SM_TTL", "300"))                    # seconds
 MIN_TRADE_USD = float(os.environ.get("SM_MIN_TRADE_USD", "10"))  # ignore dust swaps
 SOL_PRICE_FALLBACK = float(os.environ.get("SM_SOL_PRICE", "150"))
+MAX_BODY_BYTES = int(os.environ.get("SM_MAX_BODY_BYTES", "16384"))
 
 # Win-rate engine: compute realized PnL win-rate for the top-N wallets by volume.
 WINRATE_TOP_N = int(os.environ.get("SM_WINRATE_N", "22"))      # wallets to score / refresh
@@ -350,6 +351,15 @@ _MINT_POOL = {}          # mint -> pool address (for the token drawer)
 _BASE = {"ts": 0, "data": None}
 _BASE_LOCK = threading.Lock()
 _BASE_TTL = int(os.environ.get("SM_BASE_TTL", "300"))
+_WARMUP = {"running": False, "last_error": None, "last_ok": None}
+_WARMUP_LOCK = threading.Lock()
+
+
+class RequestBodyError(Exception):
+    def __init__(self, code, error):
+        super().__init__(error)
+        self.code = code
+        self.error = error
 
 
 def _err_payload(err, tf, memes):
@@ -576,6 +586,27 @@ def wallet_detail(address):
             "holdings": holds[:25], "trades_available": bool(swaps)}
 
 
+def _warmup_background():
+    with _WARMUP_LOCK:
+        _WARMUP.update({"running": True, "last_error": None})
+    try:
+        d = build_smart_money(force=True)
+        with _WARMUP_LOCK:
+            _WARMUP["running"] = False
+            _WARMUP["last_ok"] = time.time()
+            _WARMUP["last_error"] = d.get("error")
+        if d.get("error"):
+            print(f"  (warmup error: {d['error']})")
+        else:
+            print(f"  Tracking {d['wallet_count']} smart wallets across "
+                  f"{d['token_count']} tokens. SOL ${d.get('sol_price')}. {d['updated']}")
+    except Exception as e:
+        with _WARMUP_LOCK:
+            _WARMUP["running"] = False
+            _WARMUP["last_error"] = type(e).__name__
+        print(f"  (warmup failed, will retry on request: {type(e).__name__})")
+
+
 # ---------------------------------------------------------------------------
 # Token-gating: per-request redaction view (full data is never sent to free users)
 # ---------------------------------------------------------------------------
@@ -727,7 +758,10 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
-        for k, v in (extra_headers or []):
+        headers = extra_headers or []
+        if not any(k.lower() == "x-content-type-options" for k, _ in headers):
+            self.send_header("X-Content-Type-Options", "nosniff")
+        for k, v in headers:
             self.send_header(k, v)
         self.end_headers()
         self.wfile.write(body)
@@ -753,9 +787,19 @@ class Handler(BaseHTTPRequestHandler):
     def _body_json(self):
         try:
             n = int(self.headers.get("Content-Length", "0"))
-            return json.loads(self.rfile.read(n).decode("utf-8")) if n else {}
-        except Exception:
+        except (TypeError, ValueError):
+            raise RequestBodyError(400, "bad_json")
+        if n > MAX_BODY_BYTES:
+            raise RequestBodyError(413, "request_too_large")
+        if n <= 0:
             return {}
+        try:
+            body = json.loads(self.rfile.read(n).decode("utf-8"))
+        except Exception:
+            raise RequestBodyError(400, "bad_json")
+        if not isinstance(body, dict):
+            raise RequestBodyError(400, "bad_json")
+        return body
 
     @staticmethod
     def _cookie_header(token, max_age):
@@ -771,8 +815,12 @@ class Handler(BaseHTTPRequestHandler):
             path = "/landing.html"      # landing page is the front door
         elif path == "/app":
             path = "/index.html"        # the dashboard
-        fp = os.path.normpath(os.path.join(STATIC_DIR, path.lstrip("/")))
-        if not fp.startswith(STATIC_DIR) or not os.path.isfile(fp):
+        fp = os.path.abspath(os.path.normpath(os.path.join(STATIC_DIR, path.lstrip("/"))))
+        try:
+            inside_static = os.path.commonpath([STATIC_DIR, fp]) == STATIC_DIR
+        except ValueError:
+            inside_static = False
+        if not inside_static or not os.path.isfile(fp):
             self._send(404, {"error": "not found"})
             return
         ctype = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
@@ -846,7 +894,14 @@ class Handler(BaseHTTPRequestHandler):
                                "min_usd": g["min_usd"], "token_set": bool(g["token_mint"])}})
                 return
             if path == "/api/health":
-                self._send(200, {"ok": True, "key": helius.has_key(), "http": helius._HTTP})
+                with _WARMUP_LOCK:
+                    warm = dict(_WARMUP)
+                with _BASE_LOCK:
+                    base_cached = _BASE["data"] is not None
+                self._send(200, {"ok": True, "key": helius.has_key(), "http": helius._HTTP,
+                                 "warming": warm["running"], "base_cached": base_cached,
+                                 "last_warmup_error": warm["last_error"],
+                                 "last_warmup_ok": warm["last_ok"]})
                 return
         except Exception as e:
             self._send(500, {"error": str(e)})
@@ -902,6 +957,9 @@ class Handler(BaseHTTPRequestHandler):
                     slippage_bps=b.get("slippage_bps", 100),
                     execute=(path == "/api/trade/swap")))
                 return
+        except RequestBodyError as e:
+            self._send(e.code, {"error": e.error})
+            return
         except Exception as e:
             self._send(500, {"error": str(e)})
             return
@@ -918,7 +976,7 @@ def main():
         print("      Set HELIUS_API_KEY, or create config.json with")
         print('      {\"helius_api_key\": \"YOUR_KEY\"}  (or api_key.txt).')
         print("      Free dev key: https://helius.dev  ->  Dashboard  ->  API Keys.")
-    else:
+    elif False:
         print("  Helius key loaded. Warming up (trending + swap parsing)…")
         try:
             d = build_smart_money(force=True)
@@ -929,6 +987,9 @@ def main():
                       f"{d['token_count']} tokens. SOL ${d.get('sol_price')}. {d['updated']}")
         except Exception as e:
             print(f"  (warmup failed, will retry on request: {e})")
+    if helius.has_key():
+        print("  Helius key loaded. Warming up in the background (trending + swap parsing)...")
+        threading.Thread(target=_warmup_background, daemon=True).start()
     srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
     print(f"\n  Open  ->  http://localhost:{PORT}\n  Ctrl+C to stop.\n")
     try:
