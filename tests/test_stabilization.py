@@ -125,6 +125,26 @@ class ServerStabilizationTests(unittest.TestCase):
         self.assertEqual(body["error"], "no_api_key")
         self.assertEqual(body["tokens"], [])
 
+    def test_wallet_detail_rejects_invalid_address_before_api_calls(self):
+        status, body, _ = self.get_json("/api/wallet?address=not-a-wallet")
+
+        self.assertEqual(status, 200)
+        self.assertEqual(body["error"], "not_an_address")
+
+    def test_cookie_secure_flag_is_configurable(self):
+        old = os.environ.get("SM_COOKIE_SECURE")
+        os.environ["SM_COOKIE_SECURE"] = "1"
+        try:
+            header, value = server.Handler._cookie_header("abc", 1)
+        finally:
+            if old is None:
+                os.environ.pop("SM_COOKIE_SECURE", None)
+            else:
+                os.environ["SM_COOKIE_SECURE"] = old
+
+        self.assertEqual(header, "Set-Cookie")
+        self.assertIn("; Secure", value)
+
     def test_malformed_json_returns_bad_json(self):
         code, body = self.post_json_error("/api/auth/verify", b"{")
 

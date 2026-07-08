@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import unittest
 
@@ -100,6 +101,25 @@ class GatingConfigTests(unittest.TestCase):
         self.assertEqual(g["min_usd"], 7)
         self.assertEqual(g["pumpfun_mcap_target"], 90000)
         self.assertEqual(g["admin_wallets"], {VALID_WALLET})
+
+
+class SessionSecretTests(unittest.TestCase):
+    def test_empty_secret_file_is_replaced_with_strong_secret(self):
+        old_secret_file = auth.SECRET_FILE
+        old_env = os.environ.pop("SM_SESSION_SECRET", None)
+        with tempfile.TemporaryDirectory() as td:
+            auth.SECRET_FILE = f"{td}/.session_secret"
+            with open(auth.SECRET_FILE, "wb") as f:
+                f.write(b"")
+
+            secret = auth._secret()
+
+            self.assertGreaterEqual(len(secret), 32)
+            with open(auth.SECRET_FILE, "rb") as f:
+                self.assertEqual(f.read().strip(), secret)
+        auth.SECRET_FILE = old_secret_file
+        if old_env is not None:
+            os.environ["SM_SESSION_SECRET"] = old_env
 
 
 if __name__ == "__main__":

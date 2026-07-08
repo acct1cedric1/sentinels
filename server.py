@@ -566,6 +566,9 @@ def lookup_token(address, time_frame="24h"):
 
 
 def wallet_detail(address):
+    address = (address or "").strip()
+    if not _B58_RE.match(address):
+        return {"error": "not_an_address"}
     assets = helius.assets_by_owner(address)
     holds = []
     for a in assets:
@@ -603,8 +606,8 @@ def _warmup_background():
     except Exception as e:
         with _WARMUP_LOCK:
             _WARMUP["running"] = False
-            _WARMUP["last_error"] = str(e)
-        print(f"  (warmup failed, will retry on request: {e})")
+            _WARMUP["last_error"] = type(e).__name__
+        print(f"  (warmup failed, will retry on request: {type(e).__name__})")
 
 
 # ---------------------------------------------------------------------------
@@ -784,6 +787,13 @@ class Handler(BaseHTTPRequestHandler):
         s = self._session()
         return bool(s and s.get("premium"))
 
+    def _can_force_refresh(self):
+        host = self.client_address[0] if self.client_address else ""
+        if host in ("127.0.0.1", "::1"):
+            return True
+        s = self._session()
+        return bool(s and s.get("pubkey") in auth.gating()["admin_wallets"])
+
     def _body_json(self):
         try:
             n = int(self.headers.get("Content-Length", "0"))
@@ -805,8 +815,9 @@ class Handler(BaseHTTPRequestHandler):
 
     @staticmethod
     def _cookie_header(token, max_age):
+        secure = "; Secure" if os.environ.get("SM_COOKIE_SECURE", "").lower() in ("1", "true", "yes", "on") else ""
         return ("Set-Cookie",
-                f"sm_session={token}; HttpOnly; SameSite=Lax; Path=/; Max-Age={max_age}")
+                f"sm_session={token}; HttpOnly; SameSite=Lax; Path=/; Max-Age={max_age}{secure}")
 
     def _query(self):
         from urllib.parse import urlparse, parse_qs
@@ -840,7 +851,8 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/smartmoney":
                 tf = q.get("tf", "24h")
                 memes = q.get("memecoins", "0") == "1"
-                full = build_smart_money(tf, memes, force=q.get("force") == "1")
+                force = q.get("force") == "1" and self._can_force_refresh()
+                full = build_smart_money(tf, memes, force=force)
                 self._send(200, gate_view(full, self._premium()))
                 return
             if path == "/api/token":
@@ -906,7 +918,8 @@ class Handler(BaseHTTPRequestHandler):
                                  "last_warmup_ok": warm["last_ok"]})
                 return
         except Exception as e:
-            self._send(500, {"error": str(e)})
+            print(f"  GET {path} failed: {type(e).__name__}")
+            self._send(500, {"error": "internal_error"})
             return
         self._serve_static(path)
 
@@ -963,7 +976,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(e.code, {"error": e.error})
             return
         except Exception as e:
-            self._send(500, {"error": str(e)})
+            print(f"  POST {path} failed: {type(e).__name__}")
+            self._send(500, {"error": "internal_error"})
             return
         self._send(404, {"error": "not found"})
 
@@ -978,17 +992,6 @@ def main():
         print("      Set HELIUS_API_KEY, or create config.json with")
         print('      {\"helius_api_key\": \"YOUR_KEY\"}  (or api_key.txt).')
         print("      Free dev key: https://helius.dev  ->  Dashboard  ->  API Keys.")
-    elif False:
-        print("  Helius key loaded. Warming up (trending + swap parsing)…")
-        try:
-            d = build_smart_money(force=True)
-            if d.get("error"):
-                print(f"  (warmup error: {d['error']})")
-            else:
-                print(f"  Tracking {d['wallet_count']} smart wallets across "
-                      f"{d['token_count']} tokens. SOL ${d.get('sol_price')}. {d['updated']}")
-        except Exception as e:
-            print(f"  (warmup failed, will retry on request: {e})")
     srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
     if helius.has_key():
         print("  Helius key loaded. Warming up in the background (trending + swap parsing)...")

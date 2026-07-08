@@ -299,7 +299,9 @@ def _secret():
         return k
     if os.path.isfile(SECRET_FILE):
         with open(SECRET_FILE, "rb") as f:
-            return f.read().strip()
+            k = f.read().strip()
+        if len(k) >= 32:
+            return k
     k = secrets.token_hex(32).encode()
     try:
         with open(SECRET_FILE, "wb") as f:
