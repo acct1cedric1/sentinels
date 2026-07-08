@@ -77,7 +77,7 @@ def _get(path, params=None, ttl=120, retries=3):
                 _cache[ck] = (time.time(), data)
             return data
         except Exception as e:
-            last_err = str(e)
+            last_err = type(e).__name__
             time.sleep(backoff); backoff *= 2
     return {"_error": last_err or "request_failed"}
 

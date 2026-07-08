@@ -219,6 +219,8 @@ def _coerce_number(value, default):
         return default
     if not isinstance(number, (int, float)) or number != number or number in (float("inf"), float("-inf")):
         return default
+    if number < 0:
+        return default
     if isinstance(value, str) and number.is_integer():
         return int(number)
     return number
@@ -227,7 +229,14 @@ def _coerce_number(value, default):
 def _coerce_admin_wallets(value):
     if not isinstance(value, (list, tuple, set)):
         return set()
-    return {wallet for wallet in value if isinstance(wallet, str) and _B58_OK(wallet)}
+    wallets = set()
+    for wallet in value:
+        if not isinstance(wallet, str):
+            continue
+        wallet = wallet.strip()
+        if _B58_OK(wallet):
+            wallets.add(wallet)
+    return wallets
 
 
 def gating():
@@ -247,6 +256,7 @@ def gating():
         g.get("pumpfun_mcap_target"), _DEFAULT_GATING["pumpfun_mcap_target"]
     )
     g["admin_wallets"] = _coerce_admin_wallets(g.get("admin_wallets"))
+    g["token_mint"] = str(g.get("token_mint") or "").strip()
     return g
 
 

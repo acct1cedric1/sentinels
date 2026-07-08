@@ -29,6 +29,7 @@ class GatingConfigTests(unittest.TestCase):
             "lock_winrate": "65",
             "min_usd": "12.5",
             "pumpfun_mcap_target": "250000",
+            "token_mint": "  mint-address  ",
             "admin_wallets": [VALID_WALLET],
         })
 
@@ -39,13 +40,14 @@ class GatingConfigTests(unittest.TestCase):
         self.assertEqual(g["lock_winrate"], 65)
         self.assertEqual(g["min_usd"], 12.5)
         self.assertEqual(g["pumpfun_mcap_target"], 250000)
+        self.assertEqual(g["token_mint"], "mint-address")
         self.assertEqual(g["admin_wallets"], {VALID_WALLET})
 
     def test_invalid_values_fall_back_to_defaults(self):
         self.write_gating({
             "enabled": "sometimes",
             "trading_unlocked": object().__class__.__name__,
-            "lock_winrate": "not-a-number",
+            "lock_winrate": "-1",
             "min_usd": ["5"],
             "pumpfun_mcap_target": "nan",
             "admin_wallets": "not-a-wallet-list",
@@ -64,6 +66,7 @@ class GatingConfigTests(unittest.TestCase):
         self.write_gating({
             "admin_wallets": [
                 VALID_WALLET,
+                f" {VALID_WALLET} ",
                 "not base58",
                 "123",
                 123,
@@ -72,6 +75,12 @@ class GatingConfigTests(unittest.TestCase):
         })
 
         self.assertEqual(auth.gating()["admin_wallets"], {VALID_WALLET})
+
+    def test_admin_wallet_helper_accepts_only_list_tuple_or_set(self):
+        self.assertEqual(auth._coerce_admin_wallets([VALID_WALLET]), {VALID_WALLET})
+        self.assertEqual(auth._coerce_admin_wallets((VALID_WALLET,)), {VALID_WALLET})
+        self.assertEqual(auth._coerce_admin_wallets({VALID_WALLET}), {VALID_WALLET})
+        self.assertEqual(auth._coerce_admin_wallets(VALID_WALLET), set())
 
     def test_valid_native_config_values_preserve_public_behavior(self):
         self.write_gating({

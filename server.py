@@ -603,8 +603,8 @@ def _warmup_background():
     except Exception as e:
         with _WARMUP_LOCK:
             _WARMUP["running"] = False
-            _WARMUP["last_error"] = type(e).__name__
-        print(f"  (warmup failed, will retry on request: {type(e).__name__})")
+            _WARMUP["last_error"] = str(e)
+        print(f"  (warmup failed, will retry on request: {e})")
 
 
 # ---------------------------------------------------------------------------
@@ -789,9 +789,11 @@ class Handler(BaseHTTPRequestHandler):
             n = int(self.headers.get("Content-Length", "0"))
         except (TypeError, ValueError):
             raise RequestBodyError(400, "bad_json")
+        if n < 0:
+            raise RequestBodyError(400, "bad_json")
         if n > MAX_BODY_BYTES:
             raise RequestBodyError(413, "request_too_large")
-        if n <= 0:
+        if n == 0:
             return {}
         try:
             body = json.loads(self.rfile.read(n).decode("utf-8"))
@@ -987,10 +989,10 @@ def main():
                       f"{d['token_count']} tokens. SOL ${d.get('sol_price')}. {d['updated']}")
         except Exception as e:
             print(f"  (warmup failed, will retry on request: {e})")
+    srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
     if helius.has_key():
         print("  Helius key loaded. Warming up in the background (trending + swap parsing)...")
-        threading.Thread(target=_warmup_background, daemon=True).start()
-    srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
+    threading.Thread(target=_warmup_background, daemon=True).start()
     print(f"\n  Open  ->  http://localhost:{PORT}\n  Ctrl+C to stop.\n")
     try:
         srv.serve_forever()

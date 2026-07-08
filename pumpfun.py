@@ -73,7 +73,7 @@ def _get(path, ttl=6, retries=2):
                 _cache[path] = (time.time(), data)
             return data
         except Exception as e:
-            last_err = str(e); time.sleep(0.6)
+            last_err = type(e).__name__; time.sleep(0.6)
     return {"_error": last_err or "request_failed"}
 
 
