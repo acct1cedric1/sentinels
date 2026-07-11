@@ -1,5 +1,6 @@
 import http.client
 import json
+import os
 import threading
 import unittest
 from http.server import ThreadingHTTPServer
@@ -71,6 +72,15 @@ class ServerBehaviorTests(unittest.TestCase):
         self.assertEqual(status, 404)
         self.assertEqual(headers.get("X-Content-Type-Options"), "nosniff")
         self.assertEqual(json.loads(data.decode("utf-8")), {"error": "not found"})
+
+    def test_frontend_retries_warmup_without_showing_data_error(self):
+        app_path = os.path.join(server.STATIC_DIR, "app.js")
+        with open(app_path, encoding="utf-8") as f:
+            app = f.read()
+
+        self.assertIn('d.error === "warming_up"', app)
+        self.assertIn('setTimeout(() => load(false), 3000)', app)
+        self.assertIn('b.className = "banner hidden"', app)
 
     def test_main_binds_server_before_starting_keyed_warmup(self):
         events = []

@@ -44,7 +44,9 @@ function tokenLogo(t, cls) {
 }
 
 // ---- load ----
+let _warmupRetry = null;
 async function load(force) {
+  clearTimeout(_warmupRetry);
   document.getElementById("refresh").textContent = "…";
   const up = document.getElementById("updated");
   up.textContent = "syncing " + STATE.tf + "…";
@@ -53,10 +55,12 @@ async function load(force) {
     STATE.data = await r.json();
     banner(STATE.data);
     document.getElementById("updated").textContent =
+      STATE.data.error === "warming_up" ? "Preparing live data…" :
       STATE.data.error ? "" : `Updated ${STATE.data.updated} · ${STATE.tf}`;
     document.getElementById("cnt-tokens").textContent = STATE.data.token_count ?? 0;
     document.getElementById("cnt-wallets").textContent = STATE.data.wallet_count ?? 0;
     render();
+    if (STATE.data.error === "warming_up") _warmupRetry = setTimeout(() => load(false), 3000);
   } catch (e) {
     document.getElementById("tok-body").innerHTML =
       `<tr><td colspan="9" class="loading">Failed to load: ${esc(e)}</td></tr>`;
@@ -66,7 +70,9 @@ async function load(force) {
 
 function banner(d) {
   const b = document.getElementById("banner");
-  if (d.error === "no_api_key") {
+  if (d.error === "warming_up") {
+    b.className = "banner hidden";
+  } else if (d.error === "no_api_key") {
     b.className = "banner";
     b.innerHTML = `<b>No Helius API key.</b> Set <code>HELIUS_API_KEY</code> (or add <code>config.json</code> →
       <code>{"helius_api_key":"…"}</code>) and restart. Free dev key: helius.dev → Dashboard → API Keys.`;
