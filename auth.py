@@ -32,6 +32,7 @@ CONFIG = os.path.join(HERE, "config.json")
 SECRET_FILE = os.path.join(HERE, ".session_secret")
 
 NONCE_TTL = 300          # seconds a login nonce stays valid
+MAX_NONCES = 1000        # bound unauthenticated challenge storage
 SESSION_TTL = 86400      # seconds a session lasts (24h)
 
 
@@ -277,6 +278,8 @@ def issue_nonce():
         now = time.time()
         for n in [n for n, (_, e) in _nonces.items() if e < now]:
             _nonces.pop(n, None)
+        while len(_nonces) >= MAX_NONCES:
+            _nonces.pop(next(iter(_nonces)))
         _nonces[nonce] = (msg, now + NONCE_TTL)
     return nonce, msg
 

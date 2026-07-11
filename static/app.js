@@ -39,7 +39,7 @@ function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;"
 
 function tokenLogo(t, cls) {
   const sym = esc((t.symbol || "?").slice(0, 3));
-  if (t.logo) return `<img class="${cls}" src="${esc(t.logo)}" onerror="this.outerHTML='<div class=&quot;${cls} ph&quot;>${sym}</div>'">`;
+  if (t.logo) return `<img class="${cls}" src="${esc(t.logo)}" onerror="this.onerror=null;this.src='favicon.svg'">`;
   return `<div class="${cls} ph">${sym}</div>`;
 }
 

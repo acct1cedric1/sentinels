@@ -103,6 +103,25 @@ class GatingConfigTests(unittest.TestCase):
         self.assertEqual(g["admin_wallets"], {VALID_WALLET})
 
 
+class NonceStoreTests(unittest.TestCase):
+    def setUp(self):
+        self.old_nonces = auth._nonces
+        self.old_max = auth.MAX_NONCES
+        auth._nonces = {}
+        auth.MAX_NONCES = 3
+
+    def tearDown(self):
+        auth._nonces = self.old_nonces
+        auth.MAX_NONCES = self.old_max
+
+    def test_nonce_store_evicts_oldest_challenges_at_limit(self):
+        issued = [auth.issue_nonce()[0] for _ in range(4)]
+
+        self.assertEqual(len(auth._nonces), 3)
+        self.assertNotIn(issued[0], auth._nonces)
+        self.assertTrue(all(n in auth._nonces for n in issued[1:]))
+
+
 class SessionSecretTests(unittest.TestCase):
     def test_empty_secret_file_is_replaced_with_strong_secret(self):
         old_secret_file = auth.SECRET_FILE

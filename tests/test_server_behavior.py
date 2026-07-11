@@ -38,6 +38,8 @@ class ServerBehaviorTests(unittest.TestCase):
 
         self.assertEqual(status, 200)
         self.assertEqual(headers.get("X-Content-Type-Options"), "nosniff")
+        self.assertEqual(headers.get("X-Frame-Options"), "DENY")
+        self.assertEqual(headers.get("Referrer-Policy"), "same-origin")
         payload = json.loads(data.decode("utf-8"))
         for key in ("ok", "key", "http", "warming", "base_cached", "last_warmup_error"):
             self.assertIn(key, payload)
@@ -81,6 +83,21 @@ class ServerBehaviorTests(unittest.TestCase):
         self.assertIn('d.error === "warming_up"', app)
         self.assertIn('setTimeout(() => load(false), 3000)', app)
         self.assertIn('b.className = "banner hidden"', app)
+
+    def test_frontend_logo_fallback_does_not_embed_symbol_in_javascript(self):
+        app_path = os.path.join(server.STATIC_DIR, "app.js")
+        with open(app_path, encoding="utf-8") as f:
+            app = f.read()
+
+        self.assertNotIn("this.outerHTML=", app)
+        self.assertIn("this.onerror=null;this.src='favicon.svg'", app)
+
+    def test_chat_invalid_cursor_falls_back_to_start(self):
+        status, _, data = self.request("GET", "/api/chat?after=not-a-number")
+
+        self.assertEqual(status, 200)
+        payload = json.loads(data.decode("utf-8"))
+        self.assertIsInstance(payload["messages"], list)
 
     def test_main_binds_server_before_starting_keyed_warmup(self):
         events = []

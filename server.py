@@ -764,6 +764,8 @@ class Handler(BaseHTTPRequestHandler):
         headers = extra_headers or []
         if not any(k.lower() == "x-content-type-options" for k, _ in headers):
             self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Referrer-Policy", "same-origin")
         for k, v in headers:
             self.send_header(k, v)
         self.end_headers()
@@ -815,9 +817,11 @@ class Handler(BaseHTTPRequestHandler):
 
     @staticmethod
     def _cookie_header(token, max_age):
-        secure = "; Secure" if os.environ.get("SM_COOKIE_SECURE", "").lower() in ("1", "true", "yes", "on") else ""
+        secure_env = os.environ.get("SM_COOKIE_SECURE")
+        secure = secure_env is None or secure_env.lower() in ("1", "true", "yes", "on")
+        secure_attr = "; Secure" if secure else ""
         return ("Set-Cookie",
-                f"sm_session={token}; HttpOnly; SameSite=Lax; Path=/; Max-Age={max_age}{secure}")
+                f"sm_session={token}; HttpOnly; SameSite=Lax; Path=/; Max-Age={max_age}{secure_attr}")
 
     def _query(self):
         from urllib.parse import urlparse, parse_qs
@@ -896,7 +900,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, site_config())
                 return
             if path == "/api/chat":
-                after = int(q.get("after", "0") or 0)
+                try:
+                    after = max(0, int(q.get("after", "0") or 0))
+                except (TypeError, ValueError):
+                    after = 0
                 s = self._session()
                 self._send(200, {"messages": chat.recent(after),
                                  "can_post": bool(s), "ai": chat.ai_enabled()})

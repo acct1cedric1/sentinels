@@ -149,11 +149,12 @@ class ServerStabilizationTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(body["error"], "not_an_address")
 
-    def test_cookie_secure_flag_is_configurable(self):
-        old = os.environ.get("SM_COOKIE_SECURE")
-        os.environ["SM_COOKIE_SECURE"] = "1"
+    def test_cookie_is_secure_by_default_and_can_be_disabled_locally(self):
+        old = os.environ.pop("SM_COOKIE_SECURE", None)
         try:
-            header, value = server.Handler._cookie_header("abc", 1)
+            header, secure_value = server.Handler._cookie_header("abc", 1)
+            os.environ["SM_COOKIE_SECURE"] = "0"
+            _, local_value = server.Handler._cookie_header("abc", 1)
         finally:
             if old is None:
                 os.environ.pop("SM_COOKIE_SECURE", None)
@@ -161,7 +162,8 @@ class ServerStabilizationTests(unittest.TestCase):
                 os.environ["SM_COOKIE_SECURE"] = old
 
         self.assertEqual(header, "Set-Cookie")
-        self.assertIn("; Secure", value)
+        self.assertIn("; Secure", secure_value)
+        self.assertNotIn("; Secure", local_value)
 
     def test_malformed_json_returns_bad_json(self):
         code, body = self.post_json_error("/api/auth/verify", b"{")
